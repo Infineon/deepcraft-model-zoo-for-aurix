@@ -1,0 +1,41 @@
+[
+{
+  "title": "MobileNet for Traffic Object Detection",
+  "description": "Traffic object detection model designed for embedded hardware",
+  "long_description": "MobileNet is a lightweight deep learning model designed for efficient on-device vision applications. It has been optimized for speed and low power consumption, making it suitable for embedded hardware. The model has been pretrained and adapted for detecting various traffic objects, including vehicles, pedestrians, and cyclists.",
+  "algorithm": "Classification",
+  "sensors": ["Camera"],
+  "domain": ["Vision"],
+  "application": ["Automotive", "ADAS"],
+  "use_case": ["Traffic Object Detection"],
+  "kit": ["AURIX\u2122 KIT_A2G_TC375_LITE", "AURIX\u2122 KIT_A3G_TC4D7_LITE"],
+  "device": ["AURIX\u2122 TC3x", "AURIX\u2122 TC4x"],
+  "thumbnail_image_id": "lowres_24842_Urban_e-Mobility.png",
+  "main_image_id": "lowres_24842_Urban_e-Mobility.png",
+  "brand_image_id": "deepcraft.png",
+  "brand_url": "https://www.infineon.com/design-resources/embedded-software/deepcraft-edge-ai-solutions",
+  "links": [{"label": "Model Zoo", "url": "https://github.com/Infineon/deepcraft-model-zoo-for-aurix","heading": "Model Zoo for AURIX\u2122", "sub-heading": "Find your tools & Learn about getting started with developing Edge AI for AURIX\u2122"},
+            {"label": "GitHub", "url": "https://github.com/Infineon/deepcraft-model-zoo-for-aurix/tree/main/ClassificationMobilenet"}],
+  "workflow": ["ML Development", "ML Deployment"]
+},
+
+{
+  "title": "MobileNet for Weather Classification",
+  "description": "Weather classification model designed for embedded hardware",
+  "long_description": "MobileNet is a lightweight deep learning model designed for efficient on-device vision applications. It has been optimized for speed and low power consumption, making it suitable for embedded hardware. The model has been pretrained. Using transfer learning it has been adapted for detecting rain drops indicating rainy vs clear weather.",
+  "algorithm": "Classification",
+  "sensors": ["Camera"],
+  "domain": ["Vision"],
+  "application": ["Automotive", "ADAS"],
+  "use_case": ["Weather Classification"],
+  "kit": ["AURIX\u2122 KIT_A2G_TC375_LITE", "AURIX\u2122 KIT_A3G_TC4D7_LITE"],
+  "device": ["AURIX\u2122 TC3x", "AURIX\u2122 TC4x"],
+  "thumbnail_image_id": "lowres_22861_Woman_driving_on_rainy_day.png",
+  "main_image_id": "lowres_22861_Woman_driving_on_rainy_day.png",
+  "brand_image_id": "deepcraft.png",
+  "brand_url": "https://www.infineon.com/design-resources/embedded-software/deepcraft-edge-ai-solutions",
+  "links": [{"label": "Model Zoo", "url": "https://deepcraft.infineon.com/solutions/voice-assistant","heading": "Model Zoo for AURIX\u2122", "sub-heading": "Find your tools & Learn about getting started with developing Edge AI for AURIX\u2122"},
+            {"label": "GitHub", "url": "https://github.com/Infineon/deepcraft-model-zoo-for-aurix/tree/main/ClassificationMobilenet"}],
+  "workflow": ["ML Development", "ML Deployment"]
+}
+]

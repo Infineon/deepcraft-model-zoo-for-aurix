@@ -1,0 +1,19 @@
+{
+  "title": "Keyword Detection",
+  "description": "This model detects a specific keyword in audio streams.",
+  "long_description": "Keyword detection using a CNN model. It is implemented in TensorFlow and optimized for AURIX\u2122 TC3x and TC4x automotive MCUs.",
+  "algorithm": "Classification",
+  "sensors": ["Microphone"],
+  "domain": ["Audio"],
+  "application": ["Audio & Speaker", "Automotive"],
+  "use_case": ["Wake Word Detection"],
+  "kit": ["AURIX\u2122 KIT_A2G_TC375_LITE", "AURIX\u2122 KIT_A3G_TC4D7_LITE"],
+  "device": ["AURIX\u2122 TC3x", "AURIX\u2122 TC4x"],
+  "thumbnail_image_id": "lowres_24638_Car_access.png",
+  "main_image_id": "lowres_24638_Car_access.png",
+  "brand_image_id": "deepcraft.png",
+  "brand_url": "https://www.infineon.com/design-resources/embedded-software/deepcraft-edge-ai-solutions",
+  "links": [{"label": "Model Zoo", "url": "https://github.com/Infineon/deepcraft-model-zoo-for-aurix","heading": "Model Zoo for AURIX\u2122", "sub-heading": "Find your tools & Learn about getting started with developing Edge AI for AURIX\u2122"},
+            {"label": "GitHub", "url": "https://github.com/Infineon/deepcraft-model-zoo-for-aurix/tree/main/KeywordDetection"}],
+  "workflow": ["ML Development", "ML Deployment"]
+}

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<fmiModelDescription fmiVersion="2.0" generationDateAndTime="2025-08-28T16:00:45Z" generationTool="Simulink (R2024a)" guid="{aeab78df-ee4e-8025-85b9-b40b7b01ecb6}" modelName="nn_tuner3a" numberOfEventIndicators="0" variableNamingConvention="structured" version="8.4">
+  <CoSimulation canBeInstantiatedOnlyOncePerProcess="true" canGetAndSetFMUstate="false" canHandleVariableCommunicationStepSize="false" canNotUseMemoryManagementFunctions="true" canSerializeFMUstate="false" modelIdentifier="nn_tuner3a"/>
+  <DefaultExperiment startTime="0" stepSize="0.01" stopTime="30"/>
+  <VendorAnnotations>
+    <Tool name="Simulink">
+      <Simulink>
+        <ImportCompatibility FMUProduct="standalone FMU" requireMATLABOnPath="no" requireRelease="all"/>
+        <SimulinkModelInterface>
+          <Inport blockPath="nn_tuner3a/cte" dataType="double" dimension="[1]" portName="cte" portNumber="1" sampleTime="[0.01    0]" uniquePortName="cte" unit=""/>
+          <Inport blockPath="nn_tuner3a/p_coeff" dataType="double" dimension="[1]" portName="p_coeff" portNumber="2" sampleTime="[0.01    0]" uniquePortName="p_coeff" unit=""/>
+          <Inport blockPath="nn_tuner3a/i_coeff" dataType="double" dimension="[1]" portName="i_coeff" portNumber="3" sampleTime="[0.01    0]" uniquePortName="i_coeff" unit=""/>
+          <Inport blockPath="nn_tuner3a/d_coeff" dataType="double" dimension="[1]" portName="d_coeff" portNumber="4" sampleTime="[0.01    0]" uniquePortName="d_coeff" unit=""/>
+          <Outport blockPath="nn_tuner3a/steering" dataType="double" dimension="[1]" portName="steering" portNumber="1" sampleTime="[0.01    0]" uniquePortName="steering" unit=""/>
+        </SimulinkModelInterface>
+      </Simulink>
+    </Tool>
+  </VendorAnnotations>
+  <ModelVariables>
+    <ScalarVariable causality="input" description="cte" name="cte" valueReference="0" variability="continuous">
+      <Real start="0"/>
+      <!--Index = 1-->
+    </ScalarVariable>
+    <ScalarVariable causality="input" description="p_coeff" name="p_coeff" valueReference="1" variability="continuous">
+      <Real start="0"/>
+      <!--Index = 2-->
+    </ScalarVariable>
+    <ScalarVariable causality="input" description="i_coeff" name="i_coeff" valueReference="2" variability="continuous">
+      <Real start="0"/>
+      <!--Index = 3-->
+    </ScalarVariable>
+    <ScalarVariable causality="input" description="d_coeff" name="d_coeff" valueReference="3" variability="continuous">
+      <Real start="0"/>
+      <!--Index = 4-->
+    </ScalarVariable>
+    <ScalarVariable causality="output" description="steering" initial="calculated" name="steering" valueReference="4" variability="continuous">
+      <Real/>
+      <!--Index = 5-->
+    </ScalarVariable>
+    <ScalarVariable causality="independent" description="time" name="time" valueReference="5" variability="continuous">
+      <Real/>
+      <!--Index = 6-->
+    </ScalarVariable>
+  </ModelVariables>
+  <ModelStructure>
+    <Outputs>
+      <Unknown index="5"/>
+    </Outputs>
+    <InitialUnknowns>
+      <Unknown index="5"/>
+    </InitialUnknowns>
+  </ModelStructure>
+</fmiModelDescription>

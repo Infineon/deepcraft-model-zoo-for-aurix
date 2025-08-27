@@ -1,0 +1,19 @@
+{
+  "title": "Remaining useful life prediction",
+  "description": "Remaining useful life prediction model using MLPs & LSTMs",
+  "long_description": "This model is designed for remaining useful life prediction tasks using MLPs & LSTMs. It is implemented in PyTorch and optimized for AURIX\u2122 TC3x and TC4x automotive MCUs.",
+  "algorithm": "Regression",
+  "sensors": ["Voltage", "Current", "Vibration"],
+  "domain": ["Sensing", "Vibration"],
+  "application": ["Smart Manufacturing", "Industrial IoT", "Automotive"],
+  "use_case": ["Predictive Maintenance"],
+  "kit": ["AURIX\u2122 KIT_A2G_TC375_LITE", "AURIX\u2122 KIT_A3G_TC4D7_LITE"],
+  "device": ["AURIX\u2122 TC3x","AURIX\u2122 TC4x"],
+  "thumbnail_image_id": "lowres_24521_ATV_Software.png",
+  "main_image_id": "lowres_24521_ATV_Software.png",
+  "brand_image_id": "deepcraft.png",
+  "brand_url": "https://www.infineon.com/design-resources/embedded-software/deepcraft-edge-ai-solutions",
+  "links": [{"label": "Model Zoo", "url": "https://github.com/Infineon/deepcraft-model-zoo-for-aurix","heading": "Model Zoo for AURIX\u2122", "sub-heading": "Find your tools & Learn about getting started with developing Edge AI for AURIX\u2122"},
+            {"label": "GitHub", "url": "https://github.com/Infineon/deepcraft-model-zoo-for-aurix/tree/main/RemainingUsefulLifePrediction"}],
+  "workflow": ["ML Development", "ML Deployment"]
+}
