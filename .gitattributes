@@ -1,0 +1,4 @@
+*.csv filter=lfs diff=lfs merge=lfs -text
+Tools/tricore-gcc/AURIX-GCC-Linux.tar.gz filter=lfs diff=lfs merge=lfs -text
+*.tar.gz filter=lfs diff=lfs merge=lfs -text
+*.h5 filter=lfs diff=lfs merge=lfs -text

@@ -1,0 +1,3 @@
+AURIX-GCC provided in this repository is GPL-based software.
+The source code is available at https://github.com/EEESlab/tricore-gcc
+For a specific version of the source code, please send an email to AIModelZoo@infineon.com

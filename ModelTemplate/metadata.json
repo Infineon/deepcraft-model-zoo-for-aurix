@@ -1,0 +1,18 @@
+{
+  "title": "Tiny Yolo v2",
+  "description": "Object detection model designed for fast processing",
+  "long_description": "Tiny YOLOv2 is a real-time object detection model designed for fast processing, implemented in TensorFlow to run on PSOC(tm) Edge. The model has been trained on the COCO Person Dataset. It specifically detects persons in the frame, drawing a bounding box around them.",
+  "sensors": ["Camera"],
+  "domain": ["Vision"],
+  "application": ["Smart Home", "Appliances", "Smart Manufactoring", "Industrial IoT"],
+  "use_case": ["Person Detection"],
+  "kit": ["AURIX\u2122 KIT_A2G_TC375_LITE", "AURIX\u2122 KIT_A3G_TC4D7_LITE"],
+  "device": ["PSOC\u2122 Edge"],
+  "thumbnail_image_id": 1,
+  "main_image_id": 1,
+  "brand_image_id": "deepcraft.png",
+  "brand_url": "https://www.infineon.com/design-resources/embedded-software/deepcraft-edge-ai-solutions",
+  "links": [{"label": "Model Zoo", "url": "https://github.com/Infineon/deepcraft-model-zoo-for-aurix","heading": "Model Zoo for AURIX\u2122", "sub-heading": "Find your tools & Learn about getting started with developing Edge AI for AURIX\u2122"},
+            {"label": "GitHub", "url": "https://github.com/Infineon/deepcraft-model-zoo-for-aurix/tree/main/ModelTemplate"}],
+  "metrics": [{"label": "Inference Time (ms)", "value": 1},{"label": "Energy (mJ)", "value": 1},{"label": "Compute (MCPS)", "value": 1}]
+}
