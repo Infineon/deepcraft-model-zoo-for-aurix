@@ -1,0 +1,16 @@
+{
+  "title": "Tiny Yolo v2",
+  "description": "Object detection model designed for fast processing",
+  "long_description": "Tiny YOLOv2 is a real-time object detection model designed for fast processing, implemented in TensorFlow to run on PSOC(tm) Edge. The model has been trained on the COCO Person Dataset. It specifically detects persons in the frame, drawing a bounding box around them.",
+  "sensors": ["Camera"],
+  "domain": ["Vision"],
+  "application": ["Smart Home", "Appliances", "Smart Manufactoring", "Industrial IoT"],
+  "use_case": ["Person Detection"],
+  "kit": ["PSOC\u2122 Edge Eval Kit"],
+  "device": ["PSOC\u2122 Edge"],
+  "thumbnail_image_id": 1,
+  "main_image_id": 1,
+  "brand_image_id": 1,
+  "links": [{"label": "GitHub", "url": "tbd"}],
+  "metrics": [{"label": "Inference Time (ms)", "value": 1},{"label": "Energy (mJ)", "value": 1},{"label": "Compute (MCPS)", "value": 1}]
+}

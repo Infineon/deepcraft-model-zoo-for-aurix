@@ -1,0 +1,33 @@
+[
+{
+  "title": "MobileNet for Traffic Object Detection",
+  "description": "Traffic object detection model designed for embedded hardware",
+  "long_description": "MobileNet is a lightweight deep learning model designed for efficient on-device vision applications. It has been optimized for speed and low power consumption, making it suitable for embedded hardware. The model has been pretrained and adapted for detecting various traffic objects, including vehicles, pedestrians, and cyclists.",
+  "algorithm": "Classification",
+  "sensors": ["Camera"],
+  "domain": ["Vision"],
+  "application": ["Automotive", "ADAS"],
+  "use_case": ["Traffic Object Detection"],
+  "device": ["AURIX\u2122 TC3x", "AURIX\u2122 TC4x"],
+  "thumbnail_image_id": 24842,
+  "main_image_id": 24842,
+  "links": [],
+  "workflow": ["ML Development", "ML Deployment"]
+},
+
+{
+  "title": "MobileNet for Weather Classification",
+  "description": "Weather classification model designed for embedded hardware",
+  "long_description": "MobileNet is a lightweight deep learning model designed for efficient on-device vision applications. It has been optimized for speed and low power consumption, making it suitable for embedded hardware. The model has been pretrained. Using transfer learning it has been adapted for detecting rain drops indicating rainy vs clear weather.",
+  "algorithm": "Classification",
+  "sensors": ["Camera"],
+  "domain": ["Vision"],
+  "application": ["Automotive", "ADAS"],
+  "use_case": ["Weather Classification"],
+  "device": ["AURIX™ TC3x", "AURIX™ TC4x"],
+  "thumbnail_image_id": 22861,
+  "main_image_id": 22861,
+  "links": [],
+  "workflow": ["ML Development", "ML Deployment"]
+}
+]

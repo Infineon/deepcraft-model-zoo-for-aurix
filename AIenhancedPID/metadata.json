@@ -1,0 +1,15 @@
+{
+  "title": "AI-enhanced Trajectory Control",
+  "description": "AI enhanced PID trajectory control",
+  "long_description": "This example demonstrates trajectory control for automated driving algorithms. The lateral trajectory controller keeps the vehicle on the planned trajectory, while AI adapts P,I and D coefficients to the driving situation.",
+  "algorithm": "Regression",
+  "sensors": ["IMU", "Positioning"],
+  "domain": ["Sensing", "Motion"],
+  "application": ["Trajectory Control", "ADAS", "Automotive"],
+  "use_case": ["Trajectory Control"],
+  "device": ["AURIX\u2122 TC3x", "AURIX\u2122 TC4x"],
+  "thumbnail_image_id": 24816,
+  "main_image_id": 24816,
+  "links": [],
+  "workflow": ["ML Development", "ML Deployment"]
+}

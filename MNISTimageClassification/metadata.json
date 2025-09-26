@@ -1,0 +1,15 @@
+{
+  "title": "Handwritten digit classification",
+  "description": "Handwritten digit classification model using MLPs and CNNs",
+  "long_description": "This model is designed for handwritten digit classification tasks using convolutional neural networks (CNNs). It is implemented in TensorFlow and optimized for AURIX TC3x and TC4x automotive MCUs.",
+  "algorithm": "Classification",
+  "sensors": ["Camera"],
+  "domain": ["Vision"],
+  "application": ["Smart Manufactoring", "Industrial IoT", "Automotive"],
+  "use_case": ["Object Classification"],
+  "device": ["AURIX™ TC3x", "AURIX™ TC4x"],
+  "thumbnail_image_id": 24521,
+  "main_image_id": 24521,
+  "links": [],
+  "workflow": ["ML Development", "ML Deployment"]
+}

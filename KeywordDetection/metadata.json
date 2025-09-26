@@ -1,0 +1,15 @@
+{
+  "title": "Keyword Detection",
+  "description": "This model detects a specific keyword in audio streams.",
+  "long_description": "Keyword detection using a CNN model. It is implemented in TensorFlow and optimized for AURIX TC3x and TC4x automotive MCUs.",
+  "algorithm": "Classification",
+  "sensors": ["Microphone"],
+  "domain": ["Audio"],
+  "application": ["Audio & Speaker", "Automotive"],
+  "use_case": ["Wake Word Detection"],
+  "device": ["AURIX™ TC3x", "AURIX™ TC4x"],
+  "thumbnail_image_id": 24638,
+  "main_image_id": 24638,
+  "links": [{"label": "GitHub", "url": "tbd"}],
+  "workflow": ["ML Development", "ML Deployment"]
+}

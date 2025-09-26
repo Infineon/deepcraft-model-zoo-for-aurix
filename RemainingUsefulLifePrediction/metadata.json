@@ -1,0 +1,15 @@
+{
+  "title": "Remaining useful life prediction",
+  "description": "Remaining useful life prediction model using MLPs & LSTMs",
+  "long_description": "This model is designed for remaining useful life prediction tasks using MLPs & LSTMs. It is implemented in PyTorch and optimized for AURIX/u2122 TC3x and TC4x automotive MCUs.",
+  "algorithm": "Regression",
+  "sensors": ["Voltage", "Current", "Vibration"],
+  "domain": ["Sensing", "Vibration"],
+  "application": ["Smart Manufacturing", "Industrial IoT", "Automotive"],
+  "use_case": ["Predictive Maintenance"],
+  "device": ["AURIX™ TC3x","AURIX™ TC4x"],
+  "thumbnail_image_id": 24521,
+  "main_image_id": 24521,
+  "links": [],
+  "workflow": ["ML Development", "ML Deployment"]
+}
