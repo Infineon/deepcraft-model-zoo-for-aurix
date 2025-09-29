@@ -414,7 +414,7 @@ def plot_execution_timing(model_name, is_small_font=False):
 
 def ensure_docker_container(
     url="http://localhost:8080/convert",
-    docker_image="docker-atv-sae-ai-public-registry.vih.infineon.com/aurix_ai_tools:V1.0.1.TriCore",
+    docker_image="ghcr.io/infineon/docker-image-infineon:latest",
 ):
     try:
         response = requests.get(url, timeout=100)
