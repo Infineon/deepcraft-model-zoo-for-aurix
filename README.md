@@ -39,24 +39,16 @@ A complete implementation for predicting remaining useful life of complex system
 
 ### Getting the tool docker image
 
-**TODO: update to public registry, once set up**
-
-```bash
-# login to docker registry
-docker login -u <Username> docker-atv-sae-ai-public-registry.vih.infineon.com/
-```
-Use your IFX Windows username as `<Username>`
-
 ```bash
 # Pull the tool docker image
-docker pull docker-atv-sae-ai-public-registry.vih.infineon.com/aurix_ai_tools:V1.0.1.TriCore
+docker pull ghcr.io/infineon/docker-image-infineon:latest
 ```
 
 ### Clone the Repository
 
 ```bash
-git clone https://gitlab.intra.infineon.com/atvsae/model-zoo/ai-model-zoo-productive.git
-cd ai-model-zoo-productive/
+git clone https://github.com/Infineon/deepcraft-model-zoo-for-aurix.git
+cd deepcraft-model-zoo-for-aurix/
 ```
 
 **Note:** This repository uses Git LFS (Large File Storage) for managing large data files (CSV datasets, model checkpoints, etc.). The clone command above will automatically download LFS files if Git LFS is installed on your system.
@@ -85,6 +77,9 @@ git lfs ls-files
 The repository includes an automated setup script that creates a Python virtual environment, installs all required dependencies, validates the installation, and tests the setup. Installation will take several minutes depending on your local setup and internet connectivity.
 
 **Quick Setup:**
+
+Quick setup is intended for use under Linux. 
+
 ```bash
 # Make setup script executable
 chmod +x CentralScripts/setup.sh
