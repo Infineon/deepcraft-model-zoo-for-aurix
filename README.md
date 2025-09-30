@@ -1,4 +1,4 @@
-# AI Model Zoo
+# DEEPCRAFT™ - Model Zoo for AURIX™
 
 A collection of machine learning models and tools for developing, training, and deploying AI solutions on embedded systems. This repository consolidates various model examples and shared utilities to support AI development workflows from research to production deployment.
 
