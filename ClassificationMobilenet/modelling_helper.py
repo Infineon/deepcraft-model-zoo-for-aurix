@@ -222,7 +222,7 @@ def download_zip(url, output_path):
 def unzip(zip_path, file_path):
     with zipfile.ZipFile(zip_path, "r") as zip_ref:
         zip_ref.extractall(file_path)
-    print(f"Files extracted to: {file_path}")
+    print(f"\nFiles extracted to: {file_path}")
 
 
 def get_old_folder_names():
@@ -337,6 +337,7 @@ def fetch_sort_data():
     file_path = os.path.join(data_file_path, "DayRainDrop_Train")
 
     if not os.path.isdir(file_path):
+        os.makedirs(data_file_path, exist_ok=True)
         download_zip(url, zip_path)
         unzip(zip_path, data_file_path)
         delete_folder(file_path, "Blur")
