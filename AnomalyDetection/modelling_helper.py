@@ -47,29 +47,62 @@ data_cols = [
 ]
 
 
-def load_data(data_path="data/data.csv", meta_path="data/metadata.csv"):
+def load_data(data_path="data/data.csv"):
     try:
-        print(f"Loading file: {data_path}")
-        full_data = pd.read_csv(data_path)
-        full_data["Train_Test"] = "Test"
-        ind = np.zeros(full_data.shape[0], dtype=bool)
-        ind[0:1000000] = True
-        full_data.loc[ind, "Train_Test"] = "Train"
-        train = full_data.loc[full_data["Train_Test"] == "Train", :].copy()
-        test = full_data.loc[full_data["Train_Test"] == "Test", :].copy()
+        print(f"Loading first 1,000,000 lines from: {data_path}")
+        clean_data = pd.read_csv(data_path, nrows=1000000)
+        print(f"Loaded {len(clean_data):,} clean samples")
+        
+        # Use views instead of copies for memory efficiency
+        train = clean_data.iloc[:700000]
+        test = clean_data.iloc[700000:]
+        print(f"Training data: {len(train):,} samples")
+        print(f"Clean test data: {len(test):,} samples")
+            
     except Exception as e:
         print(f"Could not load {data_path}: {e}")
         train = None
         test = None
 
-    try:
-        print(f"Loading file: {meta_path}")
-        meta_data = pd.read_csv(meta_path)
-    except Exception as e:
-        print(f"Could not load {meta_path}: {e}")
-        meta_data = None
+    return train, test
 
-    return train, test, meta_data
+# Load anomalous data directly from data.csv using timestamp filtering
+def load_anomaly_data_from_csv(data_path, start_time, end_time):    
+    # Convert timestamps to datetime if they're strings
+    if isinstance(start_time, str):
+        start_time = pd.to_datetime(start_time)
+    if isinstance(end_time, str):
+        end_time = pd.to_datetime(end_time)
+    
+    print(f"Loading data between {start_time} and {end_time} from {data_path}")
+    
+    # Read in chunks to find the data efficiently
+    chunk_size = 100000  # Adjust based on memory constraints
+    matching_data = []
+    
+    # Skip the first 1M rows (training data) and start from test data
+    for chunk in pd.read_csv(data_path, chunksize=chunk_size, skiprows=range(1, 1000001)):
+        # Convert timestamp column to datetime
+        chunk['timestamp'] = pd.to_datetime(chunk['timestamp'])
+        
+        # Filter chunk for rows within the time range
+        mask = (chunk['timestamp'] >= start_time) & (chunk['timestamp'] <= end_time)
+        matching_rows = chunk[mask]
+        
+        if not matching_rows.empty:
+            matching_data.append(matching_rows)
+            
+        # Stop if we've passed the end time (assuming data is chronologically ordered)
+        if chunk['timestamp'].min() > end_time:
+            break
+    
+    if matching_data:
+        result = pd.concat(matching_data, ignore_index=True)
+        print(f"Found {len(result)} rows in the specified time range")
+        return result
+    else:
+        print("No data found in the specified time range")
+        return pd.DataFrame()
 
 
 def normalize_data(df, cols=data_cols, scaler=None):
@@ -98,17 +131,6 @@ def sample_sequences(df, sequence_length, n_samples, cols=data_cols, random_stat
 
 
 def sequential_sequences(df, sequence_length, cols=data_cols):
-    """
-    Generate sequential sequences from a dataframe with stride of 1.
-
-    Parameters:
-    df: DataFrame with time series data
-    sequence_length: Length of each sequence
-    cols: List of columns to include (default: mh.data_cols)
-
-    Returns:
-    numpy array of shape (n_sequences, sequence_length, n_features)
-    """
     data = df[cols].to_numpy()
     n_samples, n_features = data.shape
 
@@ -134,18 +156,6 @@ def plot_time_steps(df, n_steps, cols=data_cols):
 
 
 def mlp_autoencoder(input_dim, bottleneck, layers=3, p_drop=0.2):
-    """
-    Build an MLP-based autoencoder with symmetric encoder-decoder architecture.
-
-    Parameters:
-    input_dim: Number of input features
-    bottleneck: Size of the bottleneck layer (compressed representation)
-    layers: Number of layers in encoder (decoder will be symmetric)
-    p_drop: Dropout probability
-
-    Returns:
-    Compiled Keras model
-    """
     regularized_dense = partial(
         tf.keras.layers.Dense,
         activation="relu",
@@ -221,15 +231,6 @@ def mlp_autoencoder(input_dim, bottleneck, layers=3, p_drop=0.2):
 
 
 def get_callbacks(min_delta=0.0001):
-    """
-    Get training callbacks for early stopping and learning rate reduction.
-
-    Parameters:
-    min_delta: Minimum change in monitored quantity to qualify as improvement
-
-    Returns:
-    list: List of Keras callbacks
-    """
     callbacks = []
 
     early_stopping = tf.keras.callbacks.EarlyStopping(
@@ -253,17 +254,6 @@ def get_callbacks(min_delta=0.0001):
 
 
 def generate_model_name(model, test_loss):
-    """
-    Generate a descriptive name for the model based on its parameters and performance.
-
-    Parameters:
-    model: Trained Keras model
-    test_accuracy: Test accuracy
-    test_loss: Test loss
-
-    Returns:
-    str: Generated model name
-    """
     trainable_layers = sum(1 for layer in model.layers if layer.count_params() > 0)
     total_params = model.count_params()
     model_type = model.name.lower()  # 'mlp' or 'cnn'

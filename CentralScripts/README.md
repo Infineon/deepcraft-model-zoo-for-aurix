@@ -15,11 +15,6 @@ This folder contains scripts for common functions needed across various AI model
 
 - **`requirements.txt`**: Centralized Python dependencies for the entire model zoo ecosystem
 
-- **`validate_requirements.py`**: Dependency validation script that checks:
-  - Dependency resolution without installation
-  - Security vulnerability checks using `safety`
-  - Requirements syntax validation
-
 - **`test_requirements.py`**: Comprehensive test suite using pytest to verify:
   - Package installation and compatibility
   - Critical package imports
@@ -34,7 +29,7 @@ Core dependencies include:
 - Model conversion tools (ONNX, tf2onnx)
 - Data science stack (NumPy, Pandas, Matplotlib, Seaborn)
 - Development tools (Jupyter, Flask)
-- Testing and validation tools (pytest, safety)
+- Testing tools (pytest)
 
 See `requirements.txt` for the complete list with version specifications.
 
