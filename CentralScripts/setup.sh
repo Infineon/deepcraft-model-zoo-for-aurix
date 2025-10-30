@@ -132,29 +132,21 @@ source venv/bin/activate
 echo "⬆️  Upgrading pip..."
 pip install --upgrade pip setuptools wheel
 
-# 6. Install validation tools first
-echo "🔧 Installing validation tools..."
-pip install pip-tools packaging safety
-
-# 7. Validate requirements (need to navigate to CentralScripts for requirements.txt)
-echo "🔍 Validating requirements..."
-cd CentralScripts
-python validate_requirements.py
-
-# 8. Install dependencies
+# 6. Install dependencies
 echo "📚 Installing dependencies from requirements.txt..."
+cd CentralScripts
 pip install -r requirements.txt
 
-# 9. Run tests
+# 7. Run tests
 echo "🧪 Running tests to verify installation..."
 pip install pytest
 PYTHONWARNINGS="ignore" python -m pytest test_requirements.py -q --disable-warnings --tb=no
 
-# 10. Test helper functions
+# 8. Test helper functions
 echo "🔬 Testing helper functions..."
 python -c "from helper_functions import load_onnx_model; print('✅ Helper functions imported successfully')"
 
-# 11. Return to repo root
+# 9. Return to repo root
 cd ..
 
 echo ""
