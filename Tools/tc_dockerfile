@@ -27,7 +27,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 USER root
 
 # Install QEMU build dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     git build-essential \
     libglib2.0-dev libfdt-dev libpixman-1-dev \
     zlib1g-dev ninja-build meson \
@@ -44,7 +45,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 USER root
 
 # Runtime dependencies + Jupyter
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip python3 python3-venv python3-pip \
     libprotobuf-dev protobuf-compiler \
     libglib2.0-dev libfdt-dev libpixman-1-0 libpixman-1-dev \
@@ -93,8 +94,8 @@ COPY --chown=ubuntu:ubuntu LICENSES /home/ubuntu/LICENSES
 # Python environment with Jupyter - properly configure venv and cleanup
 RUN python3 -m venv venv
 ENV PATH="/home/ubuntu/venv/bin:$PATH"
-RUN pip install --upgrade pip && \
-    pip install flask requests jupyter notebook ipywidgets --no-cache-dir && \
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir flask requests jupyter notebook ipywidgets && \
     # Clean up Python environment to reduce size
     pip cache purge && \
     find /home/ubuntu/venv -name "*.pyc" -delete && \

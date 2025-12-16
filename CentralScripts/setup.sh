@@ -99,8 +99,20 @@ echo ""
 
 # 2. Build Docker image with embedded QEMU
 echo "[2/5] � Building Docker image with AI tools and QEMU..."
-sudo docker build -f $REPO_ROOT/Tools/tc_dockerfile -t aurix_ai_tools:V1.0.3.TriCore $REPO_ROOT > /dev/null 2>&1 &
-show_progress $! "[2/5] 🐳 Building Docker image with AI tools and QEMU"
+sudo docker build -f $REPO_ROOT/Tools/tc_dockerfile -t aurix_ai_tools:V1.0.3.TriCore $REPO_ROOT > /tmp/docker_build.log 2>&1 &
+DOCKER_PID=$!
+show_progress $DOCKER_PID "[2/5] 🐳 Building Docker image with AI tools and QEMU"
+wait $DOCKER_PID
+DOCKER_EXIT_CODE=$?
+if [ $DOCKER_EXIT_CODE -ne 0 ]; then
+    echo -e "${RED}❌ Docker build failed with exit code $DOCKER_EXIT_CODE${NC}"
+    echo -e "${YELLOW}Last 30 lines of build log:${NC}"
+    tail -30 /tmp/docker_build.log
+    echo ""
+    echo -e "${YELLOW}Full log available at: /tmp/docker_build.log${NC}"
+    exit 1
+fi
+rm -f /tmp/docker_build.log
 echo ""
 
 # Install Python if needed
