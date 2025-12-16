@@ -21,7 +21,21 @@ import logging
 import os
 import subprocess
 
-from config import *
+from config import (
+    ATOL,
+    ATOL_LIMIT,
+    CONVERSION_LOG_FILE,
+    ONNX2C,
+    QEMU,
+    RTOL,
+    RTOL_LIMIT,
+    TC_GCC,
+    TC_LINKER,
+    TC_OBJECT,
+    TEST_DATA_SET,
+    TESTGEN_TC3,
+    TESTGEN_TC4,
+)
 
 logging.basicConfig(
     filename=CONVERSION_LOG_FILE,
