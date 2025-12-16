@@ -1,18 +1,18 @@
 # Copyright (c) 2025, Infineon Technologies AG, or an affiliate of Infineon Technologies AG. All rights reserved.
 
-# This software, associated documentation and materials ("Software") is owned by Infineon Technologies AG or one 
-# of its affiliates ("Infineon") and is protected by and subject to worldwide patent protection, worldwide copyright laws, 
-# and international treaty provisions. Therefore, you may use this Software only as provided in the license agreement accompanying 
-# the software package from which you obtained this Software. If no license agreement applies, then any use, reproduction, modification, 
+# This software, associated documentation and materials ("Software") is owned by Infineon Technologies AG or one
+# of its affiliates ("Infineon") and is protected by and subject to worldwide patent protection, worldwide copyright laws,
+# and international treaty provisions. Therefore, you may use this Software only as provided in the license agreement accompanying
+# the software package from which you obtained this Software. If no license agreement applies, then any use, reproduction, modification,
 # translation, or compilation of this Software is prohibited without the express written permission of Infineon.
 
-# Disclaimer: UNLESS OTHERWISE EXPRESSLY AGREED WITH INFINEON, THIS SOFTWARE IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND, 
-# EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, ALL WARRANTIES OF NON-INFRINGEMENT OF THIRD-PARTY RIGHTS AND IMPLIED WARRANTIES 
-# SUCH AS WARRANTIES OF FITNESS FOR A SPECIFIC USE/PURPOSE OR MERCHANTABILITY. Infineon reserves the right to make changes to the Software 
-# without notice. You are responsible for properly designing, programming, and testing the functionality and safety of your intended application 
-# of the Software, as well as complying with any legal requirements related to its use. Infineon does not guarantee that the Software will be 
-# free from intrusion, data theft or loss, or other breaches ("Security Breaches"), and Infineon shall have no liability arising out of any 
-# Security Breaches. Unless otherwise explicitly approved by Infineon, the Software may not be used in any application where a failure of the 
+# Disclaimer: UNLESS OTHERWISE EXPRESSLY AGREED WITH INFINEON, THIS SOFTWARE IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, ALL WARRANTIES OF NON-INFRINGEMENT OF THIRD-PARTY RIGHTS AND IMPLIED WARRANTIES
+# SUCH AS WARRANTIES OF FITNESS FOR A SPECIFIC USE/PURPOSE OR MERCHANTABILITY. Infineon reserves the right to make changes to the Software
+# without notice. You are responsible for properly designing, programming, and testing the functionality and safety of your intended application
+# of the Software, as well as complying with any legal requirements related to its use. Infineon does not guarantee that the Software will be
+# free from intrusion, data theft or loss, or other breaches ("Security Breaches"), and Infineon shall have no liability arising out of any
+# Security Breaches. Unless otherwise explicitly approved by Infineon, the Software may not be used in any application where a failure of the
 # Product or any consequences of the use thereof can reasonably be expected to result in personal injury.
 
 
@@ -52,13 +52,13 @@ def load_data(data_path="data/data.csv"):
         print(f"Loading first 1,000,000 lines from: {data_path}")
         clean_data = pd.read_csv(data_path, nrows=1000000)
         print(f"Loaded {len(clean_data):,} clean samples")
-        
+
         # Use views instead of copies for memory efficiency
         train = clean_data.iloc[:700000]
         test = clean_data.iloc[700000:]
         print(f"Training data: {len(train):,} samples")
         print(f"Clean test data: {len(test):,} samples")
-            
+
     except Exception as e:
         print(f"Could not load {data_path}: {e}")
         train = None
@@ -66,36 +66,39 @@ def load_data(data_path="data/data.csv"):
 
     return train, test
 
+
 # Load anomalous data directly from data.csv using timestamp filtering
-def load_anomaly_data_from_csv(data_path, start_time, end_time):    
+def load_anomaly_data_from_csv(data_path, start_time, end_time):
     # Convert timestamps to datetime if they're strings
     if isinstance(start_time, str):
         start_time = pd.to_datetime(start_time)
     if isinstance(end_time, str):
         end_time = pd.to_datetime(end_time)
-    
+
     print(f"Loading data between {start_time} and {end_time} from {data_path}")
-    
+
     # Read in chunks to find the data efficiently
     chunk_size = 100000  # Adjust based on memory constraints
     matching_data = []
-    
+
     # Skip the first 1M rows (training data) and start from test data
-    for chunk in pd.read_csv(data_path, chunksize=chunk_size, skiprows=range(1, 1000001)):
+    for chunk in pd.read_csv(
+        data_path, chunksize=chunk_size, skiprows=range(1, 1000001)
+    ):
         # Convert timestamp column to datetime
-        chunk['timestamp'] = pd.to_datetime(chunk['timestamp'])
-        
+        chunk["timestamp"] = pd.to_datetime(chunk["timestamp"])
+
         # Filter chunk for rows within the time range
-        mask = (chunk['timestamp'] >= start_time) & (chunk['timestamp'] <= end_time)
+        mask = (chunk["timestamp"] >= start_time) & (chunk["timestamp"] <= end_time)
         matching_rows = chunk[mask]
-        
+
         if not matching_rows.empty:
             matching_data.append(matching_rows)
-            
+
         # Stop if we've passed the end time (assuming data is chronologically ordered)
-        if chunk['timestamp'].min() > end_time:
+        if chunk["timestamp"].min() > end_time:
             break
-    
+
     if matching_data:
         result = pd.concat(matching_data, ignore_index=True)
         print(f"Found {len(result)} rows in the specified time range")

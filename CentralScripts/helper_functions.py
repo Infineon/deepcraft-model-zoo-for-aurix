@@ -1,18 +1,18 @@
 # Copyright (c) 2025, Infineon Technologies AG, or an affiliate of Infineon Technologies AG. All rights reserved.
 
-# This software, associated documentation and materials ("Software") is owned by Infineon Technologies AG or one 
-# of its affiliates ("Infineon") and is protected by and subject to worldwide patent protection, worldwide copyright laws, 
-# and international treaty provisions. Therefore, you may use this Software only as provided in the license agreement accompanying 
-# the software package from which you obtained this Software. If no license agreement applies, then any use, reproduction, modification, 
+# This software, associated documentation and materials ("Software") is owned by Infineon Technologies AG or one
+# of its affiliates ("Infineon") and is protected by and subject to worldwide patent protection, worldwide copyright laws,
+# and international treaty provisions. Therefore, you may use this Software only as provided in the license agreement accompanying
+# the software package from which you obtained this Software. If no license agreement applies, then any use, reproduction, modification,
 # translation, or compilation of this Software is prohibited without the express written permission of Infineon.
 
-# Disclaimer: UNLESS OTHERWISE EXPRESSLY AGREED WITH INFINEON, THIS SOFTWARE IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND, 
-# EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, ALL WARRANTIES OF NON-INFRINGEMENT OF THIRD-PARTY RIGHTS AND IMPLIED WARRANTIES 
-# SUCH AS WARRANTIES OF FITNESS FOR A SPECIFIC USE/PURPOSE OR MERCHANTABILITY. Infineon reserves the right to make changes to the Software 
-# without notice. You are responsible for properly designing, programming, and testing the functionality and safety of your intended application 
-# of the Software, as well as complying with any legal requirements related to its use. Infineon does not guarantee that the Software will be 
-# free from intrusion, data theft or loss, or other breaches ("Security Breaches"), and Infineon shall have no liability arising out of any 
-# Security Breaches. Unless otherwise explicitly approved by Infineon, the Software may not be used in any application where a failure of the 
+# Disclaimer: UNLESS OTHERWISE EXPRESSLY AGREED WITH INFINEON, THIS SOFTWARE IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, ALL WARRANTIES OF NON-INFRINGEMENT OF THIRD-PARTY RIGHTS AND IMPLIED WARRANTIES
+# SUCH AS WARRANTIES OF FITNESS FOR A SPECIFIC USE/PURPOSE OR MERCHANTABILITY. Infineon reserves the right to make changes to the Software
+# without notice. You are responsible for properly designing, programming, and testing the functionality and safety of your intended application
+# of the Software, as well as complying with any legal requirements related to its use. Infineon does not guarantee that the Software will be
+# free from intrusion, data theft or loss, or other breaches ("Security Breaches"), and Infineon shall have no liability arising out of any
+# Security Breaches. Unless otherwise explicitly approved by Infineon, the Software may not be used in any application where a failure of the
 # Product or any consequences of the use thereof can reasonably be expected to result in personal injury.
 
 
@@ -33,7 +33,6 @@ warnings.filterwarnings("ignore", category=DeprecationWarning, module="tensorflo
 import subprocess
 import time
 from pathlib import Path
-from typing import Optional, Union
 
 import numpy as np
 
@@ -86,9 +85,9 @@ def save_data(model_folder, data, is_input=False):
     dataset_dir = Path(data_path)
 
     if is_input:
-        file = dataset_dir / f"input_0.pb"
+        file = dataset_dir / "input_0.pb"
     else:
-        file = dataset_dir / f"output_0.pb"
+        file = dataset_dir / "output_0.pb"
 
     if not dataset_dir.exists():
         os.makedirs(dataset_dir)
@@ -396,7 +395,9 @@ def plot_execution_timing(model_name, is_small_font=False):
         hue="Target",
         palette=[COLORS["BERRY_MAIN"], COLORS["OCEAN_3"]],
     )
-    ax.set_title(f"Total clock cycles AURIX\u2122 TC3x: {clk_tc3}, AURIX\u2122 TC4x: {clk_tc4}")
+    ax.set_title(
+        f"Total clock cycles AURIX\u2122 TC3x: {clk_tc3}, AURIX\u2122 TC4x: {clk_tc4}"
+    )
     ax.set_xlabel("Clock cycles")
     ax.set_xscale("log")
     ax.set_ylabel("")
@@ -423,7 +424,7 @@ def plot_execution_timing(model_name, is_small_font=False):
 
 def ensure_docker_container(
     url="http://localhost:8080/convert",
-    docker_image="aurix_ai_tools:V1.0.1.TriCore",
+    docker_image="aurix_ai_tools:V1.0.3.TriCore",
 ):
     try:
         response = requests.get(url, timeout=100)
@@ -566,7 +567,7 @@ def get_clock_counts(model_folder, target):
 
 
 def get_clock_counts_from_file(model_name):
-    _ , onnx_model_file = get_output_paths(model_name)
+    _, onnx_model_file = get_output_paths(model_name)
     model_onnx = onnx.load_model(onnx_model_file)
     ideal_clock_count, _ = get_idealized_runtime_bound(model_onnx)
     return ideal_clock_count

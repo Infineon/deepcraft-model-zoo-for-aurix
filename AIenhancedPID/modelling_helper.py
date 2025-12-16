@@ -1,47 +1,41 @@
 # Copyright (c) 2025, Infineon Technologies AG, or an affiliate of Infineon Technologies AG. All rights reserved.
 
-# This software, associated documentation and materials ("Software") is owned by Infineon Technologies AG or one 
-# of its affiliates ("Infineon") and is protected by and subject to worldwide patent protection, worldwide copyright laws, 
-# and international treaty provisions. Therefore, you may use this Software only as provided in the license agreement accompanying 
-# the software package from which you obtained this Software. If no license agreement applies, then any use, reproduction, modification, 
+# This software, associated documentation and materials ("Software") is owned by Infineon Technologies AG or one
+# of its affiliates ("Infineon") and is protected by and subject to worldwide patent protection, worldwide copyright laws,
+# and international treaty provisions. Therefore, you may use this Software only as provided in the license agreement accompanying
+# the software package from which you obtained this Software. If no license agreement applies, then any use, reproduction, modification,
 # translation, or compilation of this Software is prohibited without the express written permission of Infineon.
 
-# Disclaimer: UNLESS OTHERWISE EXPRESSLY AGREED WITH INFINEON, THIS SOFTWARE IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND, 
-# EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, ALL WARRANTIES OF NON-INFRINGEMENT OF THIRD-PARTY RIGHTS AND IMPLIED WARRANTIES 
-# SUCH AS WARRANTIES OF FITNESS FOR A SPECIFIC USE/PURPOSE OR MERCHANTABILITY. Infineon reserves the right to make changes to the Software 
-# without notice. You are responsible for properly designing, programming, and testing the functionality and safety of your intended application 
-# of the Software, as well as complying with any legal requirements related to its use. Infineon does not guarantee that the Software will be 
-# free from intrusion, data theft or loss, or other breaches ("Security Breaches"), and Infineon shall have no liability arising out of any 
-# Security Breaches. Unless otherwise explicitly approved by Infineon, the Software may not be used in any application where a failure of the 
+# Disclaimer: UNLESS OTHERWISE EXPRESSLY AGREED WITH INFINEON, THIS SOFTWARE IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, ALL WARRANTIES OF NON-INFRINGEMENT OF THIRD-PARTY RIGHTS AND IMPLIED WARRANTIES
+# SUCH AS WARRANTIES OF FITNESS FOR A SPECIFIC USE/PURPOSE OR MERCHANTABILITY. Infineon reserves the right to make changes to the Software
+# without notice. You are responsible for properly designing, programming, and testing the functionality and safety of your intended application
+# of the Software, as well as complying with any legal requirements related to its use. Infineon does not guarantee that the Software will be
+# free from intrusion, data theft or loss, or other breaches ("Security Breaches"), and Infineon shall have no liability arising out of any
+# Security Breaches. Unless otherwise explicitly approved by Infineon, the Software may not be used in any application where a failure of the
 # Product or any consequences of the use thereof can reasonably be expected to result in personal injury.
 
 
 from tensorflow.keras.models import Model
-from typing import TypeVar, Tuple, Any
+from typing import TypeVar
 import numpy as np
-import numpy.typing as npt
-from scipy.io import loadmat, savemat
 import logging as log
 import scipy
 from fmpy import *
 from fmpy import read_model_description, extract
 from fmpy.fmi2 import FMU2Slave
-from fmpy.util import plot_result, download_test_file
+from fmpy.util import plot_result
 import shutil
-import os
 import sys
-from matplotlib import pyplot as plt
 import plotly.subplots as sp
 import plotly.graph_objs as go
 
 from keras.models import Model
 from keras.layers import Dense
-import tensorflow as tf
-from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.models import Model
 from tensorflow.keras.losses import MeanSquaredError
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.layers import Dense, Flatten, Input, Dropout
+from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping
 from CentralScripts.helper_functions import COLORS
 

@@ -40,4 +40,3 @@ TC_OBJECT = f"{BASE_DIR}/TC_compilation/crttsim.o"
 
 QEMU = f"{BASE_DIR}/qemu-system-tricore"
 QEMU_LOG = f"{BASE_DIR}/qemu.log"
-

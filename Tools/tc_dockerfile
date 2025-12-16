@@ -20,17 +20,37 @@
 
 
 # syntax=docker/dockerfile:1.2
+
+# Stage 1: QEMU Builder - Build QEMU TriCore emulator from source
+FROM ubuntu:22.04 AS qemu-builder
+ARG DEBIAN_FRONTEND=noninteractive
+USER root
+
+# Install QEMU build dependencies
+RUN apt-get update && apt-get install -y \
+    git build-essential \
+    libglib2.0-dev libfdt-dev libpixman-1-dev \
+    zlib1g-dev ninja-build meson \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Copy and execute QEMU build script
+COPY Tools/qemu_build.sh /tmp/qemu_build.sh
+RUN chmod +x /tmp/qemu_build.sh && /tmp/qemu_build.sh
+
+# Stage 2: Final Runtime Image
 FROM ubuntu:22.04
 ARG DEBIAN_FRONTEND=noninteractive
 USER root
 
-# Dependencies + Jupyter
+# Runtime dependencies + Jupyter
 RUN apt-get update && apt-get install -y \
     unzip python3 python3-venv python3-pip \
     libprotobuf-dev protobuf-compiler \
     libglib2.0-dev libfdt-dev libpixman-1-0 libpixman-1-dev \
     zlib1g-dev libepoxy0 libnuma1 libasound2 libpulse0 \
     libncursesw5 libncurses5 \
+    libboost-stacktrace1.74.0 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -40,11 +60,13 @@ USER ubuntu
 WORKDIR /home/ubuntu
 RUN mkdir -p out workspace
 
-# Copy and setup tools - combine operations to reduce layers
-COPY --chown=ubuntu:ubuntu Tools/onnx2c-accelerated/V1.0.1/onnx2c_model_zoo \
-                          Tools/onnx2c-accelerated/V1.0.1/testgen_target_tc4x_model_zoo \
-                          Tools/onnx2c-accelerated/V1.0.1/testgen_target_tc3x_model_zoo \
-                          Tools/qemu/qemu_6250_tricore/build/qemu-system-tricore \
+# Copy QEMU binary from builder stage
+COPY --from=qemu-builder --chown=ubuntu:ubuntu /tmp/qemu_6250_tricore/build/qemu-system-tricore /home/ubuntu/qemu-system-tricore
+
+# Copy and setup other tools - combine operations to reduce layers
+COPY --chown=ubuntu:ubuntu Tools/onnx2c-accelerated/V1.0.3/onnx2c_model_zoo \
+                          Tools/onnx2c-accelerated/V1.0.3/testgen_target_tc4x_model_zoo \
+                          Tools/onnx2c-accelerated/V1.0.3/testgen_target_tc3x_model_zoo \
                           /home/ubuntu/
 RUN chmod +x /home/ubuntu/onnx2c_model_zoo /home/ubuntu/testgen_target_* /home/ubuntu/qemu-system-tricore
 

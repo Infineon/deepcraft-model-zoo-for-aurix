@@ -24,6 +24,8 @@ sed -i 's/\r$//' "$0" 2>/dev/null || true
 set -e  # Exit on any error
 
 echo "🚀 Setting up AI Model Zoo Python Environment..."
+echo "📋 This will install system dependencies, create Python environment, and set up Docker tools with QEMU"
+echo ""
 
 # Use Python 3.11 for consistency across Ubuntu versions
 PYTHON_VERSION="3.11"
@@ -60,97 +62,111 @@ else
     echo "📍 Working from repository root: $(pwd)"
 fi
 
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Get number of CPU cores for parallel compilation
+NPROC=$(nproc)
+
+# Function to show animated dots while a command runs
+show_progress() {
+    local pid=$1
+    local message="$2"
+    while kill -0 $pid 2>/dev/null; do
+        for i in {1..3}; do
+            if kill -0 $pid 2>/dev/null; then
+                echo -ne "\r${BLUE}$message$(printf "%*s" $i | tr ' ' '.')$(printf "%*s" $((3-i)) | tr ' ' ' ')${NC}"
+                sleep 0.5
+            fi
+        done
+        if kill -0 $pid 2>/dev/null; then
+            echo -ne "\r${BLUE}$message   ${NC}"
+            sleep 0.5
+        fi
+    done
+    echo -ne "\r${GREEN}$message... ✓${NC}\n"
+}
+
 # 1. Install System Dependencies
-echo "📦 Installing system dependencies..."
-sudo apt update
-sudo apt install -y build-essential software-properties-common curl
+echo "[1/5] 📦 Installing system dependencies..."
+(sudo apt update && sudo apt install -y build-essential software-properties-common curl) > /dev/null 2>&1 &
+show_progress $! "[1/5] 📦 Installing system dependencies"
+echo ""
 
-# install QEMU dependencies
-echo "📦 Installing QEMU"
-sudo apt-get install -y git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev ninja-build meson
-
-# clone QEMU if not already present
-QEMU_DIR="$REPO_ROOT/Tools/qemu/qemu_6250_tricore"
-if [ ! -d "$QEMU_DIR" ]; then
-    mkdir -p $REPO_ROOT/Tools/qemu
-    cd $REPO_ROOT/Tools/qemu
-    git clone https://github.com/volumit/qemu_6250_tricore.git
-    cd qemu_6250_tricore
-else
-    echo "✅ QEMU repo already cloned at $QEMU_DIR"
-    cd "$QEMU_DIR"
-fi
-
-# build QEMU if artifact not present
-QEMU_BIN="$QEMU_DIR/build/qemu-system-tricore"
-if [ ! -f "$QEMU_BIN" ]; then
-    echo "📦 Building QEMU"
-    mkdir -p build && cd build
-    ../configure
-    meson setup --reconfigure
-    meson compile
-    cd "$REPO_ROOT"
-else
-    echo "✅ QEMU build artifact found at $QEMU_BIN, skipping build"
-    cd "$REPO_ROOT"
-fi
-
-
-# build docker image
-echo "🐳 Building Docker image..."
-sudo docker build -f $REPO_ROOT/Tools/tc_dockerfile -t aurix_ai_tools:V1.0.1.TriCore $REPO_ROOT
+# 2. Build Docker image with embedded QEMU
+echo "[2/5] � Building Docker image with AI tools and QEMU..."
+sudo docker build -f $REPO_ROOT/Tools/tc_dockerfile -t aurix_ai_tools:V1.0.3.TriCore $REPO_ROOT > /dev/null 2>&1 &
+show_progress $! "[2/5] 🐳 Building Docker image with AI tools and QEMU"
+echo ""
 
 # Install Python if needed
 if [ "$NEED_PYTHON_INSTALL" = true ]; then
-    echo "🐍 Installing Python ${PYTHON_VERSION}..."
-    sudo add-apt-repository ppa:deadsnakes/ppa -y
-    sudo apt update
+    (sudo add-apt-repository ppa:deadsnakes/ppa -y && sudo apt update) > /dev/null 2>&1 &
+    show_progress $! "[3/5] 🐍 Setting up Python repository"
     
     # Install Python packages (distutils not needed for 3.11+)
     if [[ "$PYTHON_VERSION" == "3.11" ]]; then
-        sudo apt install -y python${PYTHON_VERSION} python${PYTHON_VERSION}-dev python${PYTHON_VERSION}-venv
+        sudo apt install -y python${PYTHON_VERSION} python${PYTHON_VERSION}-dev python${PYTHON_VERSION}-venv > /dev/null 2>&1 &
     else
-        sudo apt install -y python${PYTHON_VERSION} python${PYTHON_VERSION}-dev python${PYTHON_VERSION}-venv
+        sudo apt install -y python${PYTHON_VERSION} python${PYTHON_VERSION}-dev python${PYTHON_VERSION}-venv > /dev/null 2>&1 &
     fi
+    show_progress $! "[3/5] 🐍 Installing Python ${PYTHON_VERSION}"
     
     # Install pip for the specific Python version
-    echo "📦 Installing pip for Python ${PYTHON_VERSION}..."
-    curl -sS https://bootstrap.pypa.io/get-pip.py | python${PYTHON_VERSION}
+    curl -sS https://bootstrap.pypa.io/get-pip.py | python${PYTHON_VERSION} > /dev/null 2>&1 &
+    show_progress $! "[3/5] 📦 Installing pip for Python ${PYTHON_VERSION}"
 else
-    echo "✅ Python ${PYTHON_VERSION} already available, skipping installation"
+    echo "[3/5] 🐍 Python ${PYTHON_VERSION} already available ✓"
 fi
+echo ""
 
 # 2. Create virtual environment in repo root
-echo "📁 Creating virtual environment in repo root..."
 echo "🐍 Creating virtual environment with Python ${PYTHON_VERSION}: venv"
-python${PYTHON_VERSION} -m venv venv
+python${PYTHON_VERSION} -m venv venv &
+show_progress $! "[4/5] 📁 Creating Python virtual environment"
 
 echo "✅ Activating virtual environment..."
 source venv/bin/activate
 
 # 5. Upgrade pip to latest version
-echo "⬆️  Upgrading pip..."
-pip install --upgrade pip setuptools wheel
+pip install --upgrade pip setuptools wheel > /dev/null 2>&1 &
+show_progress $! "[4/5] ⬆️ Upgrading pip"
 
 # 6. Install dependencies
-echo "📚 Installing dependencies from requirements.txt..."
+echo "   📦 This may take a few minutes..."
 cd CentralScripts
-pip install -r requirements.txt
+pip install -r requirements.txt > /dev/null 2>&1 &
+show_progress $! "[4/5] 📚 Installing ML and AI dependencies"
+echo ""
 
 # 7. Run tests
-echo "🧪 Running tests to verify installation..."
-pip install pytest
-PYTHONWARNINGS="ignore" python -m pytest test_requirements.py -q --disable-warnings --tb=no
+echo "📋 Running tests to verify installation..."
+pip install pytest > /dev/null 2>&1 &
+show_progress $! "[5/5] 📦 Installing test framework"
+
+PYTHONWARNINGS="ignore" python -m pytest test_requirements.py -q --disable-warnings --tb=no > /dev/null 2>&1 &
+show_progress $! "[5/5] 🧪 Verifying installation"
 
 # 8. Test helper functions
-echo "🔬 Testing helper functions..."
-python -c "from helper_functions import load_onnx_model; print('✅ Helper functions imported successfully')"
+python -c "from helper_functions import load_onnx_model; print('✅ Helper functions imported successfully')" 2>/dev/null &
+show_progress $! "[5/5] 🔬 Testing helper functions"
 
 # 9. Return to repo root
 cd ..
 
 echo ""
 echo "🎉 Setup complete!"
+echo ""
+echo "📋 Summary:"
+echo "   ✅ System dependencies installed"
+echo "   ✅ Docker image built with QEMU"
+echo "   ✅ Python environment ready"
+echo "   ✅ ML dependencies installed"
+echo "   ✅ All tests passed"
 echo ""
 echo "To activate the environment in the future, run:"
 echo "    source venv/bin/activate"

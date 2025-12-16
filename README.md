@@ -64,23 +64,30 @@ git lfs ls-files
 
 ### Setting Up the Environment
 
-The repository includes a setup script that creates a Docker image and a Python virtual environment. It:
-- pulls and builds tools for compilation and simulation,
-- builds a local Docker image with the required tooling,
-- installs all required packages from `requirements.txt`,
-- validates the package installation, 
-- and runs some setup tests ensuring everything is working correctly.
+The repository includes an optimized setup script that creates a Docker image and Python virtual environment. The script provides progress indicators and is optimized for fast execution with parallel compilation and build caching.
+
+The setup process includes 8 main steps:
+- Installing system dependencies
+- Setting up QEMU (TriCore emulator) with optimized compilation
+- Building Docker image with AI tools
+- Creating Python virtual environment
+- Installing ML/AI packages (TensorFlow, PyTorch, ONNX, etc.)
+- Validating the installation
 
 ```bash
 # Make setup script executable
 chmod +x CentralScripts/setup.sh
 
 # Run the script from the repository root
-bash CentralScripts/setup.sh
+sudo CentralScripts/setup.sh
 ```
-After running this, all dependencies should be installed. The script also validates that the installation went well and tests the setup. 
+The ```sudo``` command requires your Linux password.
 
-**Note:** The installation may take up to several hours depending on your local setup and internet bandwidth.
+The script shows progress with animated indicators for each step and completes in approximately:
+- **Fresh installation**: 10-60 minutes (depending on system specs and internet speed)
+- **Subsequent runs**: Much faster due to build caching and optimization
+
+**Note:** The setup is optimized for parallel compilation using available CPU cores and includes build caching for faster rebuilds. You'll see progress indicators with animated feedback during longer operations.
 
 ### Activating Environment and Starting JupyterLab
 
