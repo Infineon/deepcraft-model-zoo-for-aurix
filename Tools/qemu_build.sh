@@ -22,13 +22,6 @@
 
 set -e  # Exit on any error
 
-# Color codes for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
 echo "🚀 QEMU TriCore Build Script"
 echo "📋 Building optimized QEMU for TriCore emulation..."
 echo ""
@@ -82,7 +75,7 @@ echo "   ✅ Meson build system configured"
 # Compile with all available cores
 echo "⚡ Compiling QEMU (using $NPROC parallel jobs)..."
 START_TIME=$(date +%s)
-meson compile -j $NPROC
+meson compile -j "$NPROC"
 END_TIME=$(date +%s)
 BUILD_TIME=$((END_TIME - START_TIME))
 

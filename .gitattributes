@@ -1,3 +1,5 @@
 *.csv filter=lfs diff=lfs merge=lfs -text
 *.h5 filter=lfs diff=lfs merge=lfs -text
 *.tar.gz filter=lfs diff=lfs merge=lfs -text
+Tools/onnx2c-accelerated/**/testgen_target_* filter=lfs diff=lfs merge=lfs -text
+Tools/onnx2c-accelerated/**/onnx2c_model_zoo filter=lfs diff=lfs merge=lfs -text
