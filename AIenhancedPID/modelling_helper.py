@@ -17,11 +17,14 @@
 
 
 from tensorflow.keras.models import Model
+from tensorflow.keras.losses import MeanSquaredError
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.callbacks import EarlyStopping
 from typing import TypeVar
 import numpy as np
 import logging as log
 import scipy
-from fmpy import *
 from fmpy import read_model_description, extract
 from fmpy.fmi2 import FMU2Slave
 from fmpy.util import plot_result
@@ -29,14 +32,6 @@ import shutil
 import sys
 import plotly.subplots as sp
 import plotly.graph_objs as go
-
-from keras.models import Model
-from keras.layers import Dense
-from tensorflow.keras.models import Model
-from tensorflow.keras.losses import MeanSquaredError
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.layers import Dense, Dropout
-from tensorflow.keras.callbacks import EarlyStopping
 from CentralScripts.helper_functions import COLORS
 
 
@@ -173,7 +168,6 @@ def simulate_custom_input(
     # define the model name and simulation parameters
     fmu_filename = "exported_model/nn_tuner3a.fmu"
     start_time = 0.0
-    threshold = 2.0
     stop_time = 30.0
     step_size = 1e-2
 
@@ -523,13 +517,13 @@ class KerasModel(Model):
 
 
 def get_model(origin):
+    # Note: PyTorch support not currently implemented (TorchNet class not defined)
+    # if origin == "torch":
+    #     model = TorchNet()
+    #     model.eval()
+    #     return model
 
-    if origin == "torch":
-        model = TorchNet()
-        model.eval()
-        return model
-
-    elif origin == "tf":
+    if origin == "tf":
         model = KerasModel()
         model.compile(loss=MeanSquaredError(), optimizer=Adam())
         return model

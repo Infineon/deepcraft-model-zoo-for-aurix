@@ -20,6 +20,7 @@
 # explicitly approved by Infineon, the Software may not be used in any application where a failure of the Product or any
 # consequences of the use thereof can reasonably be expected to result in personal injury.
 
+# shellcheck disable=SC1091
 source /home/ubuntu/venv/bin/activate
 
 case "${MODE}" in

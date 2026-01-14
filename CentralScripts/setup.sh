@@ -62,28 +62,42 @@ else
     echo "📍 Working from repository root: $(pwd)"
 fi
 
-# Color codes for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Color codes for output (only if outputting to a terminal)
+if [ -t 1 ]; then
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    NC='\033[0m' # No Color
+else
+    # No colors when output is redirected
+    RED=''
+    GREEN=''
+    NC=''
+fi
 
 # Function to show animated dots while a command runs
 show_progress() {
     local pid=$1
     local message="$2"
-    while kill -0 "$pid" 2>/dev/null; do
-        for i in {1..3}; do
+    
+    # Check if output is going to a terminal (interactive) or being redirected/piped
+    if [ -t 1 ]; then
+        # Interactive mode: show animated progress
+        while kill -0 "$pid" 2>/dev/null; do
+            for i in {1..3}; do
+                if kill -0 "$pid" 2>/dev/null; then
+                    echo -ne "\r$message$(printf "%${i}s" "" | tr ' ' '.')$(printf "%$((3-i))s" "" | tr ' ' ' ')"
+                    sleep 0.5
+                fi
+            done
             if kill -0 "$pid" 2>/dev/null; then
-                echo -ne "\r$message$(printf "%${i}s" "" | tr ' ' '.')$(printf "%$((3-i))s" "" | tr ' ' ' ')"
+                echo -ne "\r$message   "
                 sleep 0.5
             fi
         done
-        if kill -0 "$pid" 2>/dev/null; then
-            echo -ne "\r$message   "
-            sleep 0.5
-        fi
-    done
+    else
+        # Non-interactive mode: just wait silently (single line already printed)
+        wait "$pid"
+    fi
     echo -ne "\r${GREEN}$message... ✓${NC}\n"
 }
 
@@ -95,31 +109,24 @@ echo ""
 
 # Step 2: Build Docker image with embedded QEMU
 echo "[2/5] 🐳 Building Docker image with AI tools and QEMU..."
-echo "   📋 This may take several minutes on first build..."
+echo "   📋 This may take 10-15 minutes on first build (or seconds if cached)..."
+echo "   🔨 Building..."
 
-# Run docker build in background with minimal progress output
-# Show only: stage starts, qemu build, and final export/write steps
-DOCKER_BUILDKIT=1 sudo docker build --progress=plain \
+# Build the Docker image
+DOCKER_BUILDKIT=1 sudo docker build \
     -f "$REPO_ROOT/Tools/tc_dockerfile" \
     -t aurix_ai_tools:V1.0.3.TriCore \
-    "$REPO_ROOT" 2>&1 | \
-    grep -E '^\[stage-1 1/|^\[qemu-builder 1/|qemu_build\.sh|^#[0-9]+ exporting to image$|^#[0-9]+ writing image' | \
-    grep -v 'CACHED' | \
-    sed -u 's/^\[stage-1 1.*/   🔨 Building main stage (Ubuntu base + dependencies).../' | \
-    sed -u 's/^\[qemu-builder 1.*/   🔨 Building QEMU TriCore emulator.../' | \
-    sed -u 's/.*qemu_build\.sh.*/   ⚙️  Compiling QEMU (this takes the longest).../' | \
-    sed -u 's/^#[0-9]* exporting to image.*/   📦 Exporting layers.../' | \
-    sed -u 's/^#[0-9]* writing image.*/   💾 Finalizing image.../' &
+    "$REPO_ROOT"
 
-DOCKER_PID=$!
-wait $DOCKER_PID
-DOCKER_EXIT_CODE=$?
-if [ $DOCKER_EXIT_CODE -ne 0 ]; then
-    echo -e "${RED}❌ Docker build failed with exit code $DOCKER_EXIT_CODE${NC}"
-    echo -e "${YELLOW}Please check the output above for errors${NC}"
+# Verify the image was created successfully
+if sudo docker image inspect aurix_ai_tools:V1.0.3.TriCore > /dev/null 2>&1; then
+    echo -e "${GREEN}   ✅ Docker image built and tagged successfully${NC}"
+else
+    echo -e "${RED}   ❌ Docker image not found after build!${NC}"
+    echo "   Available images:"
+    sudo docker images --format "table {{.Repository}}:{{.Tag}}\t{{.ID}}\t{{.Size}}" | head -5
     exit 1
 fi
-echo -e "${GREEN}   ✅ Docker image built successfully${NC}"
 echo ""
 
 # Step 3: Install Python if needed
@@ -141,6 +148,7 @@ echo ""
 python${PYTHON_VERSION} -m venv venv &
 show_progress $! "[4/5] 📁 Creating Python virtual environment"
 
+# shellcheck disable=SC1091
 source venv/bin/activate
 
 pip install --upgrade pip setuptools wheel > /dev/null 2>&1 &
