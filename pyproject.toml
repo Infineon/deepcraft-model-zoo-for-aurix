@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-model-zoo"
+version = "1.0.0"
+description = "AI Model Zoo - Deep Learning Examples for Embedded Systems"
+readme = "README.md"
+
+[tool.ruff]
+# Exclude testing infrastructure and build artifacts
+extend-exclude = [
+    "testing",
+    "__pycache__",
+    "*.egg-info",
+    "build",
+    "dist",
+    ".git",
+    ".venv",
+    "venv",
+]
+
+# Line length to match black
+line-length = 88
+
+[tool.ruff.lint]
+# Select the rule sets to check
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+]
+
+# Ignore specific rules that are intentional design choices or too strict
+ignore = [
+    "E501",  # Line too long (handled by black, not critical for ML code with long strings)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Notebooks: Allow wildcard imports for user-friendliness
+# Educational/example code benefits from simplified imports
+"**/*.ipynb" = [
+    "F403",  # `from module import *` used; unable to detect undefined names
+    "F405",  # Name may be undefined, or defined from star imports
+    "E402",  # Module level import not at top of file (path manipulation in notebooks)
+]
+
+# Helper functions: Allow imports after TensorFlow configuration
+# TensorFlow environment variables must be set before importing TensorFlow
+"CentralScripts/helper_functions.py" = [
+    "E402",  # Module level import not at top of file
+]
+
+# Modelling helpers: Allow wildcard imports from helper_functions in notebooks' companion files
+"**/modelling_helper.py" = [
+    "E402",  # Module level import not at top of file (if needed for configs)
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.git
+  | \.venv
+  | venv
+  | build
+  | dist
+)/
+'''

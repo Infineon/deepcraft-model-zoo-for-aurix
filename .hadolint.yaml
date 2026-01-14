@@ -1,0 +1,42 @@
+# Hadolint configuration for AI Model Zoo
+# Hadolint is a Dockerfile linter that checks for best practices and common mistakes
+# https://github.com/hadolint/hadolint
+
+# Rules to ignore - these are intentional design choices for this development environment
+ignored:
+  # DL3002: Last USER should not be root
+  # Reason: This is a development/build container for QEMU and embedded toolchain compilation
+  # Root access is required for system-level operations and tool installation
+  # Not a security concern for local development environments
+  - DL3002
+
+  # DL3008: Pin versions in apt-get install
+  # Reason: Development container prioritizes flexibility over strict reproducibility
+  # Ubuntu package versions change frequently; pinning makes maintenance harder
+  # Latest stable versions from Ubuntu repos are acceptable for dev environment
+  # Production deployments should consider pinning if needed
+  - DL3008
+
+  # DL3010: Use ADD for extracting archives
+  # Reason: COPY + explicit tar extraction is intentional and more transparent
+  # ADD auto-extraction can be surprising; explicit extraction is clearer
+  # Current approach follows common Docker best practices
+  - DL3010
+
+  # DL3013: Pin versions in pip install
+  # Reason: Development environment wants latest compatible versions
+  # Pinning Python packages would require constant maintenance
+  # venv ensures isolation; version conflicts are caught during testing
+  # Production deployments can use requirements.txt with pinned versions if needed
+  - DL3013
+
+# Dockerfile-specific configuration
+# Treat warnings as errors: false (we're suppressing intentional patterns)
+failure-threshold: error
+
+# Don't check for deprecated instructions (we're using modern Dockerfile syntax)
+no-fail: false
+
+# Trust official Docker base images (ubuntu:22.04)
+trustedRegistries:
+  - docker.io

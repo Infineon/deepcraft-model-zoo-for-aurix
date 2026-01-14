@@ -123,8 +123,10 @@ class ModelConverter:
     def generate_c_file(self) -> None:
         model_file = self.get_model_file()
         command = ""
-        if self.target == "TC3" or self.target == "TC4":
-            command = f"{ONNX2C} {model_file} -punionize -l3 > {self.c_file}"
+        if self.target == "TC3":
+            command = f"{ONNX2C} {model_file} -punionize -l3 --mtc162 > {self.c_file}"
+        elif self.target == "TC4":
+            command = f"{ONNX2C} {model_file} -punionize -l3 --mtc18 > {self.c_file}"
         else:
             logging.error("Unknown target %s, select from ['TC3', 'TC4']", self.target)
             raise ValueError(
@@ -157,9 +159,9 @@ class ModelConverter:
     def generate_testgen_file(self) -> None:
         command = ""
         if self.target == "TC3":
-            command = f"{TESTGEN_TC3} {self.model_path} {self.rtol} {self.atol} {self.rtol_limit} {self.atol_limit} {self.test_data_set} -punionize -l3 > {self.testgen_file}"
+            command = f"{TESTGEN_TC3} {self.model_path} {self.rtol} {self.atol} {self.rtol_limit} {self.atol_limit} {self.test_data_set} -punionize -l3 --mtc162 > {self.testgen_file}"
         elif self.target == "TC4":
-            command = f"{TESTGEN_TC4} {self.model_path} {self.rtol} {self.atol} {self.rtol_limit} {self.atol_limit} {self.test_data_set} -punionize -l3 > {self.testgen_file}"
+            command = f"{TESTGEN_TC4} {self.model_path} {self.rtol} {self.atol} {self.rtol_limit} {self.atol_limit} {self.test_data_set} -punionize -l3 --mtc18 > {self.testgen_file}"
         else:
             logging.error("Unknown target %s, select from ['TC3', 'TC4']", self.target)
             raise ValueError(

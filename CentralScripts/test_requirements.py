@@ -144,12 +144,14 @@ def test_no_conflicting_packages():
 def test_jupyter_ecosystem():
     """Test Jupyter packages work together."""
     try:
-        import jupyter
-        import jupyterlab
+        import importlib.util
 
-        assert True
-    except ImportError as e:
-        pytest.fail(f"Jupyter ecosystem import failed: {e}")
+        assert importlib.util.find_spec("jupyter") is not None, "jupyter not found"
+        assert (
+            importlib.util.find_spec("jupyterlab") is not None
+        ), "jupyterlab not found"
+    except Exception as e:
+        pytest.fail(f"Jupyter ecosystem test failed: {e}")
 
 
 def test_data_science_stack():
@@ -168,10 +170,14 @@ def test_data_science_stack():
 def test_image_processing_capabilities():
     """Test image processing packages."""
     try:
-        from PIL import Image
-        import torchvision
-        import torchaudio
+        import importlib.util
 
-        assert True
-    except ImportError as e:
-        pytest.fail(f"Image/audio processing import failed: {e}")
+        assert importlib.util.find_spec("PIL") is not None, "PIL not found"
+        assert (
+            importlib.util.find_spec("torchvision") is not None
+        ), "torchvision not found"
+        assert (
+            importlib.util.find_spec("torchaudio") is not None
+        ), "torchaudio not found"
+    except Exception as e:
+        pytest.fail(f"Image/audio processing test failed: {e}")

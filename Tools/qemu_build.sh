@@ -45,6 +45,11 @@ QEMU_DIR="/tmp/qemu_6250_tricore"
 cd /tmp
 git clone https://github.com/volumit/qemu_6250_tricore.git
 cd "$QEMU_DIR"
+
+# Initialize Git submodules (required for QEMU build)
+echo "📥 Initializing Git submodules..."
+git submodule update --init --recursive
+echo "   ✅ Git submodules initialized"
 echo "   ✅ QEMU repository cloned"
 
 # Build QEMU
@@ -84,6 +89,7 @@ echo "   ✅ QEMU compilation completed in ${BUILD_TIME} seconds"
 # Verify the binary was built successfully
 QEMU_BIN="$QEMU_DIR/build/qemu-system-tricore"
 if [ -f "$QEMU_BIN" ]; then
+    # shellcheck disable=SC2012
     echo "   ✅ QEMU binary created: $(ls -lh $QEMU_BIN | awk '{print $5}')"
 else
     echo "   ❌ QEMU binary not found!"
