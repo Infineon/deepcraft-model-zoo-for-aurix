@@ -292,8 +292,8 @@ def calculate_metrics(model_name):
         "Model type": model_name.split("_")[0],
         "No. Paramters": total_params,
         "No. Layers": num_layers,
-        "TC3 clock cycles": clk_tc3,
-        "TC4 clock cycles": clk_tc4,
+        "TC3 instruction counts": clk_tc3,
+        "TC4 instruction counts": clk_tc4,
     }
 
     return pd.DataFrame(res, index=[1])
@@ -340,7 +340,7 @@ def extract_node_clk_to_df(log_path):
     return df
 
 
-def plot_execution_timing(model_name, is_small_font=False):
+def plot_instruction_counts(model_name, is_small_font=False):
     model_folder, _ = get_output_paths(model_name)
     log_files = search_model_folder(model_folder)
     df_list = []
@@ -396,9 +396,9 @@ def plot_execution_timing(model_name, is_small_font=False):
         palette=[COLORS["BERRY_MAIN"], COLORS["OCEAN_3"]],
     )
     ax.set_title(
-        f"Total clock cycles AURIX\u2122 TC3x: {clk_tc3}, AURIX\u2122 TC4x: {clk_tc4}"
+        f"Total instruction counts AURIX\u2122 TC3x: {clk_tc3}, AURIX\u2122 TC4x: {clk_tc4}"
     )
-    ax.set_xlabel("Clock cycles")
+    ax.set_xlabel("Instruction counts")
     ax.set_xscale("log")
     ax.set_ylabel("")
     if is_small_font:
@@ -516,8 +516,8 @@ def test_onnx_pb(model_name):
         print("Output does not match expected output. Max difference:", diff)
 
 
-def extract_clock_cycles(path):
-    clocks = 0
+def extract_instruction_counts(path):
+    counts = 0
     with open(path, "r") as file:
         lines = file.readlines()
 
@@ -525,8 +525,8 @@ def extract_clock_cycles(path):
             if "clocks" in line:
                 # split the line before and after the word clocks
                 parts = line.split("clocks")
-                clocks = int(parts[1])
-    return clocks
+                counts = int(parts[1])
+    return counts
 
 
 def count_onnx_model(model):
@@ -560,13 +560,13 @@ def get_idealized_runtime_bound(model, target="TC4"):
     return ideal_clock_count, ideal_runtime
 
 
-def get_clock_counts(model_folder, target):
+def get_counts(model_folder, target):
     path = f"{model_folder}/{target}/model_conversion.log"
-    number_clocks = extract_clock_cycles(path)
-    return number_clocks
+    number_counts = extract_instruction_counts(path)
+    return number_counts
 
 
-def get_clock_counts_from_file(model_name):
+def get_counts_from_file(model_name):
     _, onnx_model_file = get_output_paths(model_name)
     model_onnx = onnx.load_model(onnx_model_file)
     ideal_clock_count, _ = get_idealized_runtime_bound(model_onnx)
@@ -575,14 +575,12 @@ def get_clock_counts_from_file(model_name):
 
 def analyze_onnx(model_name, target):
     model_folder, _ = get_output_paths(model_name)
-    number_clocks = get_clock_counts(model_folder, target)
-    ideal_clock_count = get_clock_counts_from_file(model_name)
-    utilization = ideal_clock_count / number_clocks
+    number_instructions = get_counts(model_folder, target)
+    ideal_clock_count = get_counts_from_file(model_name)
 
     print(f"Ideal clock count: {ideal_clock_count}")
-    print(f"Emulated clock count: {number_clocks}")
-    print(f"Utilization: {utilization*100:.2f} %")
-    return number_clocks, ideal_clock_count, utilization
+    print(f"Emulated instruction count: {number_instructions}")
+    return number_instructions, ideal_clock_count
 
 
 def get_device():
