@@ -115,11 +115,11 @@ echo "   🔨 Building..."
 # Build the Docker image
 DOCKER_BUILDKIT=1 sudo docker build \
     -f "$REPO_ROOT/Tools/tc_dockerfile" \
-    -t aurix_ai_tools:V1.0.3.TriCore \
+    -t aurix_ai_tools:V1.0.4.TriCore \
     "$REPO_ROOT"
 
 # Verify the image was created successfully
-if sudo docker image inspect aurix_ai_tools:V1.0.3.TriCore > /dev/null 2>&1; then
+if sudo docker image inspect aurix_ai_tools:V1.0.4.TriCore > /dev/null 2>&1; then
     echo -e "${GREEN}   ✅ Docker image built and tagged successfully${NC}"
 else
     echo -e "${RED}   ❌ Docker image not found after build!${NC}"

@@ -82,9 +82,9 @@ RUN mkdir -p out workspace
 COPY --from=qemu-builder --chown=ubuntu:ubuntu /tmp/qemu_6250_tricore/build/qemu-system-tricore /home/ubuntu/qemu-system-tricore
 
 # Copy and setup other tools - combine operations to reduce layers
-COPY --chown=ubuntu:ubuntu Tools/onnx2c-accelerated/V1.0.3/onnx2c_model_zoo \
-                          Tools/onnx2c-accelerated/V1.0.3/testgen_target_tc4x_model_zoo \
-                          Tools/onnx2c-accelerated/V1.0.3/testgen_target_tc3x_model_zoo \
+COPY --chown=ubuntu:ubuntu Tools/onnx2c-accelerated/V1.0.4/onnx2c_model_zoo \
+                          Tools/onnx2c-accelerated/V1.0.4/testgen_target_tc4x_model_zoo \
+                          Tools/onnx2c-accelerated/V1.0.4/testgen_target_tc3x_model_zoo \
                           /home/ubuntu/
 RUN chmod +x /home/ubuntu/onnx2c_model_zoo /home/ubuntu/testgen_target_* /home/ubuntu/qemu-system-tricore
 
@@ -104,6 +104,7 @@ RUN mkdir -p /home/ubuntu/TC_compilation
 COPY --chown=ubuntu:ubuntu Tools/linker_scripts/tsim-lto.ld \
                           Tools/linker_scripts/crttsim.o \
                           /home/ubuntu/TC_compilation/
+COPY --chown=ubuntu:ubuntu Tools/include/onnx2c_tricore_inline.h /home/ubuntu/include/
 
 # Copy tool licenses
 COPY --chown=ubuntu:ubuntu LICENSES /home/ubuntu/LICENSES

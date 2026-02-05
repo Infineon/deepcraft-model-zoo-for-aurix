@@ -424,7 +424,7 @@ def plot_instruction_counts(model_name, is_small_font=False):
 
 def ensure_docker_container(
     url="http://localhost:8080/convert",
-    docker_image="aurix_ai_tools:V1.0.3.TriCore",
+    docker_image="aurix_ai_tools:V1.0.4.TriCore",
 ):
     try:
         response = requests.get(url, timeout=100)
