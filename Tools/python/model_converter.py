@@ -203,9 +203,9 @@ class ModelConverter:
     def compile_model(self) -> None:
         command = ""
         if self.target == "TC3":
-            command = f"{TC_GCC} -Ofast -mcpu=tc39xx -save-temps -Wl,-gc-sections -Wl,--extmap=a -nocrt0 -mcpu=tc39xx -Xlinker --mcpu=tc162 -T{TC_LINKER} {TC_OBJECT} {self.testgen_file} -o {self.elf_file}"
+            command = f"{TC_GCC} -Ofast -mcpu=tc39xx -save-temps -Wl,-gc-sections -Wl,--extmap=a -nocrt0 -mcpu=tc39xx -Xlinker --mcpu=tc162 -I/home/ubuntu/include -T{TC_LINKER} {TC_OBJECT} {self.testgen_file} -o {self.elf_file}"
         elif self.target == "TC4":
-            command = f"{TC_GCC} -Ofast -mcpu=tc4DAx -save-temps -Wl,-gc-sections -Wl,--extmap=a -nocrt0 -mcpu=tc4DAx -Xlinker --mcpu=tc18 -T{TC_LINKER} {TC_OBJECT} {self.testgen_file} -o {self.elf_file}"
+            command = f"{TC_GCC} -Ofast -mcpu=tc4DAx -save-temps -Wl,-gc-sections -Wl,--extmap=a -nocrt0 -mcpu=tc4DAx -Xlinker --mcpu=tc18 -I/home/ubuntu/include -T{TC_LINKER} {TC_OBJECT} {self.testgen_file} -o {self.elf_file}"
         else:
             logging.error("Unknown target %s, select from ['TC3', 'TC4']", self.target)
             raise ValueError(
