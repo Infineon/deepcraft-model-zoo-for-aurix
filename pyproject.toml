@@ -48,7 +48,7 @@ ignore = [
 
 # Helper functions: Allow imports after TensorFlow configuration
 # TensorFlow environment variables must be set before importing TensorFlow
-"CentralScripts/helper_functions.py" = [
+"_CentralScripts/helper_functions.py" = [
     "E402",  # Module level import not at top of file
 ]
 

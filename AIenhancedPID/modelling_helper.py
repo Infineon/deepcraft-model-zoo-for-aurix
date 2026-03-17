@@ -32,7 +32,7 @@ import shutil
 import sys
 import plotly.subplots as sp
 import plotly.graph_objs as go
-from CentralScripts.helper_functions import COLORS
+from _CentralScripts.helper_functions import COLORS
 
 
 T = TypeVar("T", bound=np.float32)

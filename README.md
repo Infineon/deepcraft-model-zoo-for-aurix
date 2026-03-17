@@ -12,7 +12,7 @@ This example demonstrates a proportional-integral-derivative (PID) controller en
 ### `AnomalyDetection/`
 The AnomalyDetection module showcases the use of autoencoder neural networks trained on the Controlled Anomalies Time Series (CATS) dataset. It demonstrates how to build, train, and deploy MLP-based autoencoders to detect anomalies in multivariate time series.
 
-### `CentralScripts/`
+### `_CentralScripts/`
 This directory contains shared utility scripts and helper functions for model conversion, validation, testing, and deployment.
 
 ### `ClassificationMobilenet/`
@@ -24,7 +24,7 @@ KeywordDetection is a neural network implementation for detecting English words 
 ### `MNISTimageClassification/`
 MNISTimageClassification is a well-known example of handwritten digit classification using deep learning techniques.
 
-### `ModelTemplate/`
+### `_ModelTemplate/`
 This is a template for adding new AI models to the model zoo. It provides a standardized structure and workflow for implementing new machine learning models. 
 
 ### `RemainingUsefulLifePrediction/`
@@ -76,10 +76,10 @@ The setup process includes 8 main steps:
 
 ```bash
 # Make setup script executable
-chmod +x CentralScripts/setup.sh
+chmod +x _CentralScripts/setup.sh
 
 # Run the script from the repository root
-sudo CentralScripts/setup.sh
+sudo _CentralScripts/setup.sh
 ```
 The ```sudo``` command requires your Linux password.
 
@@ -99,7 +99,7 @@ source venv/bin/activate
 Start JupyterLab. Open the URL printed in the terminal to access JupyterLab and run the template notebook (new_model_template.ipynb).
 ```bash
 # Navigate to the project you want to work on, for example:
-cd ModelTemplate
+cd _ModelTemplate
 
 # Start JupyterLab
 jupyter lab

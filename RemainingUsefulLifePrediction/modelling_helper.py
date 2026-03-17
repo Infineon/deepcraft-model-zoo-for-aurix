@@ -34,7 +34,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.preprocessing import StandardScaler
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import Dataset, DataLoader
-from CentralScripts.helper_functions import COLORS
+from _CentralScripts.helper_functions import COLORS
 
 column_names = (
     ["unit_number", "time_in_cycles"]
