@@ -41,7 +41,7 @@ parent_dir = os.path.dirname(os.getcwd())
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-import CentralScripts.helper_functions as cs
+import _CentralScripts.helper_functions as cs
 
 plt.rcParams.update({"font.size": 13})
 

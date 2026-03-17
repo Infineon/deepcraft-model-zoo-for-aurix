@@ -49,10 +49,10 @@ else
     echo "✅ Docker found: $(docker --version)"
 fi
 
-# Determine if script is being run from repo root or CentralScripts folder
+# Determine if script is being run from repo root or _CentralScripts folder
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ "$(basename "$SCRIPT_DIR")" == "CentralScripts" ]]; then
-    # Script is in CentralScripts, move to parent directory (repo root)
+if [[ "$(basename "$SCRIPT_DIR")" == "_CentralScripts" ]]; then
+    # Script is in _CentralScripts, move to parent directory (repo root)
     REPO_ROOT="$(dirname "$SCRIPT_DIR")"
     cd "$REPO_ROOT"
     echo "📍 Moved to repository root: $(pwd)"
@@ -114,7 +114,7 @@ echo "   🔨 Building..."
 
 # Build the Docker image
 DOCKER_BUILDKIT=1 sudo docker build \
-    -f "$REPO_ROOT/Tools/tc_dockerfile" \
+    -f "$REPO_ROOT/_Tools/tc_dockerfile" \
     -t aurix_ai_tools:V1.0.4.TriCore \
     "$REPO_ROOT"
 
@@ -155,7 +155,7 @@ pip install --upgrade pip setuptools wheel > /dev/null 2>&1 &
 show_progress $! "[4/5] ⬆️ Upgrading pip"
 
 echo "   📦 This may take a few minutes..."
-cd CentralScripts
+cd _CentralScripts
 pip install -r requirements.txt > /dev/null 2>&1 &
 show_progress $! "[4/5] 📚 Installing ML and AI dependencies"
 echo ""

@@ -44,7 +44,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     zlib1g-dev ninja-build meson
 
 # Copy and execute QEMU build script
-COPY Tools/qemu_build.sh /tmp/qemu_build.sh
+COPY _Tools/qemu_build.sh /tmp/qemu_build.sh
 RUN chmod +x /tmp/qemu_build.sh && /tmp/qemu_build.sh
 
 # Stage 2: Final Runtime Image
@@ -82,14 +82,14 @@ RUN mkdir -p out workspace
 COPY --from=qemu-builder --chown=ubuntu:ubuntu /tmp/qemu_6250_tricore/build/qemu-system-tricore /home/ubuntu/qemu-system-tricore
 
 # Copy and setup other tools - combine operations to reduce layers
-COPY --chown=ubuntu:ubuntu Tools/onnx2c-accelerated/V1.0.4/onnx2c_model_zoo \
-                          Tools/onnx2c-accelerated/V1.0.4/testgen_target_tc4x_model_zoo \
-                          Tools/onnx2c-accelerated/V1.0.4/testgen_target_tc3x_model_zoo \
+COPY --chown=ubuntu:ubuntu _Tools/onnx2c-accelerated/V1.0.4/onnx2c_model_zoo \
+                          _Tools/onnx2c-accelerated/V1.0.4/testgen_target_tc4x_model_zoo \
+                          _Tools/onnx2c-accelerated/V1.0.4/testgen_target_tc3x_model_zoo \
                           /home/ubuntu/
 RUN chmod +x /home/ubuntu/onnx2c_model_zoo /home/ubuntu/testgen_target_* /home/ubuntu/qemu-system-tricore
 
 # Setup GCC toolchain with proper permissions and PATH - conservative cleanup
-COPY --chown=ubuntu:ubuntu Tools/tricore-gcc/AURIX-GCC-Linux.tar.gz /home/ubuntu/
+COPY --chown=ubuntu:ubuntu _Tools/tricore-gcc/AURIX-GCC-Linux.tar.gz /home/ubuntu/
 RUN mkdir tricore_gcc && \
     tar -xzf AURIX-GCC-Linux.tar.gz -C tricore_gcc && \
     rm AURIX-GCC-Linux.tar.gz && \
@@ -101,13 +101,13 @@ ENV PATH="/home/ubuntu/tricore_gcc/bin:$PATH"
 
 # Setup compilation environment
 RUN mkdir -p /home/ubuntu/TC_compilation
-COPY --chown=ubuntu:ubuntu Tools/linker_scripts/tsim-lto.ld \
-                          Tools/linker_scripts/crttsim.o \
+COPY --chown=ubuntu:ubuntu _Tools/linker_scripts/tsim-lto.ld \
+                          _Tools/linker_scripts/crttsim.o \
                           /home/ubuntu/TC_compilation/
-COPY --chown=ubuntu:ubuntu Tools/include/onnx2c_tricore_inline.h /home/ubuntu/include/
+COPY --chown=ubuntu:ubuntu _Tools/include/onnx2c_tricore_inline.h /home/ubuntu/include/
 
 # Copy tool licenses
-COPY --chown=ubuntu:ubuntu LICENSES /home/ubuntu/LICENSES
+COPY --chown=ubuntu:ubuntu _LICENSES /home/ubuntu/LICENSES
 
 # Python environment with Jupyter - properly configure venv and cleanup
 RUN python3 -m venv venv
@@ -123,15 +123,15 @@ RUN --mount=type=cache,target=/home/ubuntu/.cache/pip \
     find /home/ubuntu/venv/lib -name "pip" -type d -exec rm -rf {} + 2>/dev/null || true
 
 # Copy application files and source info
-COPY --chown=ubuntu:ubuntu Tools/python/onnx2c_flask_server.py \
-                          Tools/python/model_converter.py \
-                          Tools/python/config.py \
-                          Tools/python/debug_conversion.ipynb \
+COPY --chown=ubuntu:ubuntu _Tools/python/onnx2c_flask_server.py \
+                          _Tools/python/model_converter.py \
+                          _Tools/python/config.py \
+                          _Tools/python/debug_conversion.ipynb \
                           /home/ubuntu/
 COPY --chown=ubuntu:ubuntu source.txt /home/ubuntu/
 
 # Copy and setup entrypoint
-COPY --chown=ubuntu:ubuntu Tools/entrypoint.sh /home/ubuntu/
+COPY --chown=ubuntu:ubuntu _Tools/entrypoint.sh /home/ubuntu/
 RUN chmod +x /home/ubuntu/entrypoint.sh
 
 ENV MODE=api

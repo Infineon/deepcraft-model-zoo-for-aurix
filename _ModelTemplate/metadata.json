@@ -8,6 +8,8 @@
   "use_case": ["Person Detection"],
   "kit": ["AURIX\u2122 KIT_A2G_TC375_LITE", "AURIX\u2122 KIT_A3G_TC4D7_LITE"],
   "device": ["PSOC\u2122 Edge"],
+  "type": ["Model Development, Model Deployment"],
+  "workflow": ["ML Development", "ML Deployment"],
   "thumbnail_image_id": 1,
   "main_image_id": 1,
   "brand_image_id": "deepcraft.png",
