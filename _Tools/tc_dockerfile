@@ -82,9 +82,9 @@ RUN mkdir -p out workspace
 COPY --from=qemu-builder --chown=ubuntu:ubuntu /tmp/qemu_6250_tricore/build/qemu-system-tricore /home/ubuntu/qemu-system-tricore
 
 # Copy and setup other tools - combine operations to reduce layers
-COPY --chown=ubuntu:ubuntu _Tools/onnx2c-accelerated/V1.0.4/onnx2c_model_zoo \
-                          _Tools/onnx2c-accelerated/V1.0.4/testgen_target_tc4x_model_zoo \
-                          _Tools/onnx2c-accelerated/V1.0.4/testgen_target_tc3x_model_zoo \
+COPY --chown=ubuntu:ubuntu _Tools/onnx2c-accelerated/V1.0.5/onnx2c_model_zoo \
+                          _Tools/onnx2c-accelerated/V1.0.5/testgen_target_tc4x_model_zoo \
+                          _Tools/onnx2c-accelerated/V1.0.5/testgen_target_tc3x_model_zoo \
                           /home/ubuntu/
 RUN chmod +x /home/ubuntu/onnx2c_model_zoo /home/ubuntu/testgen_target_* /home/ubuntu/qemu-system-tricore
 
