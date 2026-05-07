@@ -1,11 +1,11 @@
 {
-  "title": "Anomaly detection",
+  "title": "Anomaly Detection",
   "description": "Anomaly detection model using autoencoders",
   "long_description": "This model is designed for anomaly detection tasks using autoencoders. It is implemented in TensorFlow and optimized for performance on Edge devices.",
   "algorithm": "Regression",
   "sensors": ["Voltage", "Current", "IMU", "Vibration"],
   "domain": ["Sensing"],
-  "application": ["Smart Manufactoring", "Industrial IoT", "Automotive"],
+  "application": ["Smart Manufacturing", "Industrial IoT", "Automotive"],
   "use_case": ["Anomaly Detection"],
   "kit": ["AURIX\u2122 KIT_A2G_TC375_LITE", "AURIX\u2122 KIT_A3G_TC4D7_LITE"],
   "device": ["AURIX\u2122 TC3x", "AURIX\u2122 TC4x"],

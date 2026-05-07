@@ -1,5 +1,5 @@
 {
-  "title": "Remaining useful life prediction",
+  "title": "Remaining Useful Life Prediction",
   "description": "Remaining useful life prediction model using MLPs & LSTMs",
   "long_description": "This model is designed for remaining useful life prediction tasks using MLPs & LSTMs. It is implemented in PyTorch and optimized for AURIX\u2122 TC3x and TC4x automotive MCUs.",
   "algorithm": "Regression",
