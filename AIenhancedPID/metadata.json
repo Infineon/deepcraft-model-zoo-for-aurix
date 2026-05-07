@@ -1,5 +1,5 @@
 {
-  "title": "AI-enhanced Trajectory Control",
+  "title": "AI-Enhanced Trajectory Control",
   "description": "AI enhanced PID trajectory control",
   "long_description": "This example demonstrates trajectory control for automated driving algorithms. The lateral trajectory controller keeps the vehicle on the planned trajectory, while AI adapts P,I and D coefficients to the driving situation.",
   "algorithm": "Regression",
