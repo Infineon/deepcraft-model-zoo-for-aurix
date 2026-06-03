@@ -1,13 +1,12 @@
-[
 {
-  "title": "MobileNet for Traffic Object Detection and Weather Classification",
-  "description": "Traffic object detection and weather classification model designed for embedded hardware",
-  "long_description": "MobileNet is a lightweight deep learning model designed for efficient on-device vision applications. It has been optimized for speed and low power consumption, making it suitable for embedded hardware. The model has been pretrained and adapted for detecting various traffic objects, including vehicles, pedestrians, and cyclists, as well as classifying weather conditions such as rain and clear skies.",
+  "title": "MobileNet for Weather Classification",
+  "description": "Weather classification model designed for embedded hardware",
+  "long_description": "MobileNet is a lightweight deep learning model designed for efficient on-device vision applications. It has been optimized for speed and low power consumption, making it suitable for embedded hardware. The model has been pretrained and adapted for weather classification (presence of rain drops).",
   "algorithm": "Classification",
   "sensors": ["Camera"],
   "domain": ["Vision"],
   "application": ["Automotive", "ADAS"],
-  "use_case": ["Traffic Object Detection", "Weather Classification"],
+  "use_case": ["Rain Drop Classification"],
   "kit": ["AURIX\u2122 KIT_A2G_TC375_LITE", "AURIX\u2122 KIT_A3G_TC4D7_LITE"],
   "device": ["AURIX\u2122 TC3x", "AURIX\u2122 TC4x"],
   "type": ["Model Development, Model Deployment"],
@@ -17,6 +16,5 @@
   "brand_image_id": "deepcraft.png",
   "brand_url": "https://www.infineon.com/design-resources/embedded-software/deepcraft-edge-ai-solutions",
   "links": [{"label": "Model Zoo", "url": "https://github.com/Infineon/deepcraft-model-zoo-for-aurix","heading": "Model Zoo for AURIX\u2122", "sub-heading": "Find your tools & Learn about getting started with developing Edge AI for AURIX\u2122"},
-            {"label": "GitHub", "url": "https://github.com/Infineon/deepcraft-model-zoo-for-aurix/tree/main/ClassificationMobilenet"}]
+            {"label": "GitHub", "url": "https://github.com/Infineon/deepcraft-model-zoo-for-aurix/tree/main/MobileNetV3ClassificationRainDrops"}]
 }
-]
