@@ -12,8 +12,11 @@ This example demonstrates a proportional-integral-derivative (PID) controller en
 ### `AnomalyDetection/`
 The AnomalyDetection module showcases the use of autoencoder neural networks trained on the Controlled Anomalies Time Series (CATS) dataset. It demonstrates how to build, train, and deploy MLP-based autoencoders to detect anomalies in multivariate time series.
 
-### `CNNClassificaitonRainDrops`
-This CNN has been optimized for weather classification (presence of rain drops). The model is quantized using post-training quantization for efficient inference.
+### `_CentralScripts/`
+This directory contains shared utility scripts and helper functions for model conversion, validation, testing, and deployment.
+
+### `ClassificationMobilenet/`
+This example is based on a MobileNet architecture designed for efficient on-device vision applications. It is adapted for two tasks: traffic object classification (vehicles, pedestrians, cyclists, ...) and weather classification (rainy and clear conditions). 
 
 ### `KeywordDetection/`
 KeywordDetection is a neural network implementation for detecting English words in microphone recordings, suitable for voice commands in automotive applications. It was trained on the Google Speech Commands dataset (35 classes).
@@ -21,20 +24,11 @@ KeywordDetection is a neural network implementation for detecting English words 
 ### `MNISTimageClassification/`
 MNISTimageClassification is a well-known example of handwritten digit classification using deep learning techniques.
 
-### `MobileNetV3ClassificationRainDrops/`
-This example is based on a MobileNet architecture designed for efficient on-device vision applications. It is adapted for weather classification (rainy and clear conditions). 
-
-### `MobileNetV3ClassificationTrafficObjects/`
-This example is based on a MobileNet architecture designed for efficient on-device vision applications. It is adapted for traffic object classification (vehicles, pedestrians, cyclists, ...). 
+### `_ModelTemplate/`
+This is a template for adding new AI models to the model zoo. It provides a standardized structure and workflow for implementing new machine learning models. 
 
 ### `RemainingUsefulLifePrediction/`
 RemainingUsefulLifePrediction is a complete implementation for predicting remaining useful life of complex systems using deep learning. It demonstrates machine learning techniques for predictive maintenance using the NASA Turbofan Engine dataset.
-
-### `_CentralScripts/`
-This directory contains shared utility scripts and helper functions for model conversion, validation, testing, and deployment.
-
-### `_ModelTemplate/`
-This is a template for adding new AI models to the model zoo. It provides a standardized structure and workflow for implementing new machine learning models. 
 
 ## Getting Started
 
