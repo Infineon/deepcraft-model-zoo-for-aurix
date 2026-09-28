@@ -1,0 +1,13 @@
+# Browser automation for handling interactive login
+playwright==1.62.0
+
+# Cookie extraction from local browsers (optional, for auto-cookies feature)
+browser-cookie3==0.20.1
+
+# Transitive dependencies with pinned versions for reproducibility
+greenlet==3.5.4
+jeepney==0.9.0
+lz4==4.4.5
+pycryptodomex==3.23.0
+pyee==13.0.1
+typing_extensions==4.16.0

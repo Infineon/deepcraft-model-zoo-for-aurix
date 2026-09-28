@@ -1,0 +1,6 @@
+.ipynb_checkpoints/
+__pycache__/
+out/
+exported_model/checkpoints/
+exported_model/*.onnx
+exported_model/*.onnx.data

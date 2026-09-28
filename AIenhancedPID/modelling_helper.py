@@ -34,7 +34,6 @@ import plotly.subplots as sp
 import plotly.graph_objs as go
 from _CentralScripts.helper_functions import COLORS
 
-
 T = TypeVar("T", bound=np.float32)
 
 

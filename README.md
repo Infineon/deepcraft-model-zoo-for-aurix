@@ -12,11 +12,11 @@ This example demonstrates a proportional-integral-derivative (PID) controller en
 ### `AnomalyDetection/`
 The AnomalyDetection module showcases the use of autoencoder neural networks trained on the Controlled Anomalies Time Series (CATS) dataset. It demonstrates how to build, train, and deploy MLP-based autoencoders to detect anomalies in multivariate time series.
 
-### `_CentralScripts/`
-This directory contains shared utility scripts and helper functions for model conversion, validation, testing, and deployment.
+### `DriverMonitoringSystem/`
+This example demonstrates in-cabin driver monitoring using the MiniDMS model to classify driver behavior from camera input.
 
-### `ClassificationMobilenet/`
-This example is based on a MobileNet architecture designed for efficient on-device vision applications. It is adapted for two tasks: traffic object classification (vehicles, pedestrians, cyclists, ...) and weather classification (rainy and clear conditions). 
+### `Quantization_CNNClassificationRainDrops/`
+This example demonstrates post-training and quantization-aware training of a CNN for weather classification (presence of rain drops).
 
 ### `KeywordDetection/`
 KeywordDetection is a neural network implementation for detecting English words in microphone recordings, suitable for voice commands in automotive applications. It was trained on the Google Speech Commands dataset (35 classes).
@@ -24,70 +24,132 @@ KeywordDetection is a neural network implementation for detecting English words 
 ### `MNISTimageClassification/`
 MNISTimageClassification is a well-known example of handwritten digit classification using deep learning techniques.
 
-### `_ModelTemplate/`
-This is a template for adding new AI models to the model zoo. It provides a standardized structure and workflow for implementing new machine learning models. 
+### `MobileNetV3ClassificationRainDrops/`
+This example is based on a MobileNet architecture designed for efficient on-device vision applications. It is adapted for weather classification (rainy and clear conditions). 
+
+### `MobileNetV3ClassificationTrafficObjects/`
+This example is based on a MobileNet architecture designed for efficient on-device vision applications. It is adapted for traffic object classification (vehicles, pedestrians, cyclists, ...). 
 
 ### `RemainingUsefulLifePrediction/`
 RemainingUsefulLifePrediction is a complete implementation for predicting remaining useful life of complex systems using deep learning. It demonstrates machine learning techniques for predictive maintenance using the NASA Turbofan Engine dataset.
+
+### `VehicleTracker/`
+
+This example demonstrates online multi-target vehicle tracking using an RNN motion model and an LSTM data-association model trained on CARLA simulator data.
+
+### `_CentralScripts/`
+This directory contains shared utility scripts and helper functions for model conversion, validation, testing, and deployment. See its [detailed documentation](_CentralScripts/README.md) for the conversion REST API and `CallTools` client.
+
+### `_ModelTemplate/`
+This is a template for adding new AI models to the model zoo. It provides a standardized structure and workflow for implementing new machine learning models. 
+
+### `_Tools/`
+This directory contains the Docker build definition, cross-toolchain support files, linker scripts, and QEMU sources used by the conversion environment.
+
+### `_LICENSES/`
+This directory contains license information for third-party tools and components distributed with or used by the model zoo.
 
 ## Getting Started
 
 ### Prerequisites
 
 - Python 3.11
-- Docker
-- Ubuntu 22.04, native or via WSL
+- Docker Engine with the daemon running
+- Permission to run Docker as your normal user
+- Ubuntu 22.04, 24.04, or 26.04, native or via WSL
+- An [Infineon Developer Center](https://softwaretools.infineon.com/home) account for tool download. You will be prompted to login on the Infineon website during the setup process.
+
+The repository has been tested on Ubuntu 22.04, 24.04, and 26.04. The Docker
+image uses Ubuntu 24.04 because the downloaded PPU toolchain requires the
+newer glibc provided by that image; this does not limit the supported host
+Ubuntu versions.
+
+Verify that Docker is available without `sudo` before running setup:
+
+```bash
+docker info
+```
+
+If this reports a permission error, configure
+[rootless Docker](https://docs.docker.com/engine/security/rootless/) or follow
+Docker's [Linux post-installation steps](https://docs.docker.com/engine/install/linux-postinstall/)
+and then log out and back in. Membership in the `docker` group grants
+root-level privileges; do not make the Docker socket world-writable.
 
 ### Cloning the Repository
+
+This repository uses Git LFS (Large File Storage) for datasets, model
+checkpoints, and other large artifacts. Install and initialize Git LFS before
+cloning so these files are downloaded instead of being left as pointer files.
+
+On Ubuntu, install Git LFS with:
+
+```bash
+sudo apt install git-lfs
+git lfs install
+```
 
 ```bash
 git clone https://github.com/Infineon/deepcraft-model-zoo-for-aurix.git
 cd deepcraft-model-zoo-for-aurix/
 ```
 
-**Note:** This repository uses Git LFS (Large File Storage) for managing large data files (CSV datasets, model checkpoints, etc.). The clone command above will automatically download LFS files if Git LFS is installed on your system.
+If Git LFS was installed after cloning, or if the files were not downloaded
+during the clone, fetch them afterwards:
 
-If you don't have Git LFS installed, run the following command. 
-```bash
-sudo apt install git-lfs
-```
-
-If LFS files weren't downloaded during clone, fetch them afterwards.
 ```bash
 git lfs pull
 ```
 
-Verify that the LFS files are properly downloaded.
+Verify that the LFS files are properly downloaded. Each listed file should have
+an asterisk (`*`) next to it:
+
 ```bash
 git lfs ls-files
 ```
 
 ### Setting Up the Environment
 
-The repository includes an optimized setup script that creates a Docker image and Python virtual environment. The script provides progress indicators and is optimized for fast execution with parallel compilation and build caching.
+The repository includes an optimized setup script that downloads the required
+target tools from Infineon Developer Center (IDC), creates a Docker image, and
+creates the Python virtual environment. The versions, download URLs, and
+SHA-256 checksums in `_CentralScripts/tool_loader/tools.csv` are authoritative;
+the repository does not bundle fallback copies of these tools.
 
-The setup process includes 8 main steps:
+The setup process includes the following main steps:
 - Installing system dependencies
-- Setting up QEMU (TriCore emulator) with optimized compilation
-- Building Docker image with AI tools
-- Creating Python virtual environment
+- Downloading from Infineon website and checksum-verifying ACS Edge AI, AURIX&trade; GCC, and TSIM. Download requires to login.
+- Building QEMU emulators (TriCore&trade; and Arm&reg;) with optimized compilation
+- Building the Docker image with all AI tools and toolchains
+- Creating the Python virtual environment
 - Installing ML/AI packages (TensorFlow, PyTorch, ONNX, etc.)
-- Validating the installation
+- Validating Docker access, conversion-service startup, and the Python installation
 
 ```bash
 # Make setup script executable
 chmod +x _CentralScripts/setup.sh
 
 # Run the script from the repository root
-sudo _CentralScripts/setup.sh
+./_CentralScripts/setup.sh
 ```
-The ```sudo``` command requires your Linux password.
+The script uses `sudo` for individual system-level operations and may prompt for
+your Linux password. Run the script as your normal user so that the virtual
+environment and its files remain owned by your user account.
+
+The first run may open a browser for Infineon authentication. Complete the IDC
+login and allow the setup to continue. Downloaded packages and authentication
+state are stored under `_CentralScripts/tool_loader/`; these generated files are
+ignored by Git. Subsequent runs reuse cached packages only after validating
+their manifest checksums.
 
 The script shows progress with animated indicators for each step and completes in approximately:
 - **Fresh installation**: 10-60 minutes (depending on system specs and internet speed)
 - **Subsequent runs**: Much faster due to build caching and optimization
 
 **Note:** The setup is optimized for parallel compilation using available CPU cores and includes build caching for faster rebuilds. You'll see progress indicators with animated feedback during longer operations.
+
+For authentication, download, or checksum errors, see the
+[tool-loader documentation](_CentralScripts/tool_loader/README.md).
 
 ### Activating Environment and Starting JupyterLab
 
@@ -113,12 +175,29 @@ deactivate
 ## Dependencies
 
 Core components include:
-- **ONNX2C**: a tool that converts Open Neural Network Exchange Format (ONNX) models to C code
-- **AURIX&trade; GCC**: a cross-compiler for AURIX&trade; targets
-- **QEMU**: a machine emulator
+- **onnx2c** (onnx2c-ifx): a tool that converts Open Neural Network Exchange Format (ONNX) models to C code; provided by the ACS Edge AI package
+- **AURIX&trade; GCC**: a cross-compiler for AURIX&trade; TriCore&trade; targets (TC3x, TC4x)
+- **ARC LLVM/clang**: a cross-compiler for the AURIX&trade; TC4x Parallel Processing Unit (PPU); provided by the ACS Edge AI package
+- **Arm&reg; GCC** (`gcc-arm-none-eabi`): a cross-compiler for Arm&reg; Cortex&reg;-M4 targets
+- **QEMU**: machine emulators for TriCore&trade; and Arm&reg;, with a CPI plugin for cycle estimation
+- **nSIM**: the Synopsys ARC instruction-set simulator used for the PPU; provided by the ACS Edge AI package
+- **TSIM**: the default cycle-accurate TriCore&trade; instruction-set simulator (the QEMU CPI model remains available as an alternative)
 - **Flask**: a REST API framework
+
+### Conversion service
+
+The Docker image provides a REST service that converts ONNX models to C,
+compiles them, and benchmarks the selected hardware target. The generated
+`model.c`, benchmark results, and pipeline log can be downloaded after each
+conversion. See the [_CentralScripts conversion-service documentation](_CentralScripts/README.md#conversion-service-rest-api)
+for supported targets, request fields, returned artifacts, and `CallTools` usage.
+When a notebook performs model conversion, it automatically starts the required
+Docker-based conversion service. No Docker commands are needed for the notebook
+workflow.
+The local helper binds the service to localhost by default. Uploads are limited
+to 512 MiB by default; set `ZOO_MAX_CONTENT_LENGTH` to change that limit.
 
 
 ## License
 
-Please see the [LICENSE](LICENSE) for any details regarding copyright and license.
+Please see the [LICENSE](LICENSE), [EULA](EULA.txt), and [_LICENSES/README.md](_LICENSES/README.md) for copyright, usage, and third-party license information.

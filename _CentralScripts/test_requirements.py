@@ -18,10 +18,13 @@
 
 import importlib
 import importlib.metadata
-import pytest
-import os
+from pathlib import Path
 import warnings
+
+import pytest
 from packaging.requirements import Requirement
+
+REQUIREMENTS_FILE = Path(__file__).with_name("requirements.txt")
 
 # Suppress common warnings to keep output clean
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -34,7 +37,7 @@ warnings.filterwarnings("ignore", module="jupyter_core")
 
 def get_requirement_from_file(package_name):
     """Get requirement specification for a package from requirements.txt"""
-    with open("requirements.txt", "r") as f:
+    with REQUIREMENTS_FILE.open() as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith("#"):
@@ -46,12 +49,12 @@ def get_requirement_from_file(package_name):
 
 def test_requirements_file_exists():
     """Test that requirements.txt file exists and is readable."""
-    assert os.path.exists("requirements.txt"), "requirements.txt file should exist"
+    assert REQUIREMENTS_FILE.exists(), "requirements.txt file should exist"
 
 
 def test_all_packages_installable():
     """Test that all packages in requirements.txt can be installed."""
-    with open("requirements.txt", "r") as f:
+    with REQUIREMENTS_FILE.open() as f:
         requirements = [
             line.strip() for line in f if line.strip() and not line.startswith("#")
         ]
@@ -133,12 +136,12 @@ def test_tf2onnx_version_compatibility():
 
 def test_no_conflicting_packages():
     """Test for common package conflicts."""
-    try:
+    import numpy as np
+    import onnxruntime
 
-        # If both import successfully, no immediate conflict
-        assert True
-    except Exception as e:
-        pytest.fail(f"Package conflict detected: {e}")
+    input_data = np.zeros((1, 1), dtype=np.float32)
+    assert input_data.dtype == np.float32
+    assert onnxruntime.get_device() in {"CPU", "GPU", "TPU"}
 
 
 def test_jupyter_ecosystem():
