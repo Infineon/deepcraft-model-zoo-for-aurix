@@ -22,6 +22,9 @@ _CentralScripts/tool_loader/__pycache__/
 **/data/
 **/DriverMonitoringDataset/
 
+# Small tracked datasets that must not be ignored (also in the synced GitHub repo)
+!VehicleTracker/data/
+
 # Also ignore model checkpoints
 **/model_checkpoints/
 # Compiled QEMU plugin artifacts (built from source in the Docker image)
