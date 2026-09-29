@@ -27,6 +27,7 @@ DEFAULT_SESSION_FILE="$SCRIPT_DIR/infineon.session.json"
 _CURRENT_TMP=""
 _CURRENT_HEADERS=""
 _AUTH_CONFIG=""
+MANUAL_HELP_PRINTED=0
 
 _log_verbose() {
 	if [[ $verbose -eq 1 ]]; then
@@ -108,6 +109,21 @@ Examples:
 EOF
 }
 
+print_manual_download_help() {
+	if [[ $MANUAL_HELP_PRINTED -eq 1 ]]; then
+		return
+	fi
+	MANUAL_HELP_PRINTED=1
+	cat >&2 <<EOF
+
+Manual archive fallback:
+  Download the three manifest-pinned tools in a regular browser and place the
+  exact filenames in: $OUT_DIR
+  Then rerun: ./_CentralScripts/setup.sh
+  Instructions: $SCRIPT_DIR/../../README.md#manual-tool-download-fallback
+EOF
+}
+
 print_cookie_help() {
 	cat >&2 <<EOF
 Authentication required for this tool. Choose one of:
@@ -126,6 +142,7 @@ Option B – manual cookie export:
   3) Save the file as: $DEFAULT_COOKIE_FILE
   4) Re-run this script.
 EOF
+	print_manual_download_help
 }
 
 resolve_download_url() {
@@ -499,6 +516,7 @@ if [[ $failed -gt 0 ]]; then
 		echo "[DRY-RUN] Would have downloaded $downloaded tool(s), with $failed error(s)."
 	else
 		echo "Done with errors. Downloaded $downloaded tool(s), failed $failed tool(s)." >&2
+		print_manual_download_help
 	fi
 	exit 1
 fi

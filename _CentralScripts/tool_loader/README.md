@@ -36,7 +36,17 @@ loader for every required target tool:
 Run that command from the repository root. The instructions below are intended
 for troubleshooting or direct downloader development.
 
-## Manual Installation
+## Manual Archive Fallback
+
+If browser authentication works in a regular browser but the automated download
+fails, download the three required archives manually and place them in
+`_CentralScripts/tool_loader/downloads/`. Follow the repository's
+[manual tool download fallback](../../README.md#manual-tool-download-fallback)
+for the exact versions, IDC links, filenames, and setup command. This is
+different from exporting cookies: setup validates the manually downloaded files
+against `tools.csv` and reuses valid archives without authenticating again.
+
+## Standalone Loader Setup
 
 ### Prerequisites
 - Python 3.9+
@@ -111,7 +121,7 @@ Defines downloadable tools. See [CSV_FORMAT.md](CSV_FORMAT.md) for complete docu
 
 ### Environment Variables
 
-- `LOGIN_TIMEOUT` (seconds): Timeout for Infineon login callback detection. Default: 180s
+- `LOGIN_TIMEOUT` (seconds): Timeout for completing Infineon login and receiving an access token. Default: 180s
 - `DOWNLOAD_TIMEOUT` (seconds): Timeout for file downloads. Default: 600s (10 min)
 
 ## Authentication Methods
@@ -185,6 +195,9 @@ only to the softwaretools and softwaretools-preview hosts, never to Artifactory.
 - The Infineon SSO took longer than expected
 - Increase timeout: `LOGIN_TIMEOUT=300 ./_CentralScripts/tool_loader/tool_loader.sh --auto-cookies`
 - Check your internet connection
+- A temporary `oidc.<state>` browser entry is not a completed login. The loader
+  waits for an `oidc.user:*` entry containing a Bearer access token and reports
+  the final page if no token is received.
 
 ### "Download timed out"
 - The file is large or connection is slow

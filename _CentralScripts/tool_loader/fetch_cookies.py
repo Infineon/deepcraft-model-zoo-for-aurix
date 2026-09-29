@@ -32,12 +32,16 @@ Usage:
 Default output: infineon.cookies
 
 Environment variables:
-    LOGIN_TIMEOUT (seconds): Timeout for waiting for login callback (default: 180s)
+    LOGIN_TIMEOUT (seconds): Timeout for completing login and receiving an
+                             access token (default: 180s)
 """
 
+import json
 import os
 import sys
-from typing import Optional, List, Any, Dict
+import time
+from typing import Optional, List, Any, Dict, Tuple
+from urllib.parse import urlparse
 
 from security_utils import SESSION_HOSTS, atomic_write, parse_allowed_url
 
@@ -50,7 +54,10 @@ LOGIN_URL = "https://softwaretools.infineon.com"
 HOSTING_URL = "https://softwaretools-hosting.infineon.com"
 # Allow override via environment variable (in seconds)
 LOGIN_TIMEOUT_SECS = int(os.environ.get("LOGIN_TIMEOUT", "180"))
-LOGIN_TIMEOUT_MS = LOGIN_TIMEOUT_SECS * 1000
+OIDC_USER_KEY_PREFIX = "oidc.user:"
+LOGIN_FAILURE_PATHS = frozenset(
+    {"/auth/callback-error", "/forbidden", "/user-not-verified"}
+)
 
 BROWSERS = [
     "chrome",
@@ -75,6 +82,90 @@ class _DictCookie:
         self.expires = int(d.get("expires") or 0)
         self.name = d.get("name", "")
         self.value = d.get("value", "")
+
+
+def _authorization_from_storage_state(state: Dict[str, Any]) -> Optional[str]:
+    """Return a validated Bearer header from an OIDC user storage entry."""
+    for origin in state.get("origins", []):
+        if origin.get("origin") != LOGIN_URL:
+            continue
+        for item in origin.get("localStorage", []):
+            if not item.get("name", "").startswith(OIDC_USER_KEY_PREFIX):
+                continue
+            try:
+                oidc_user = json.loads(item.get("value", ""))
+            except (TypeError, json.JSONDecodeError):
+                continue
+            token = oidc_user.get("access_token")
+            token_type = oidc_user.get("token_type")
+            if (
+                isinstance(token, str)
+                and token
+                and "\r" not in token
+                and "\n" not in token
+                and isinstance(token_type, str)
+                and token_type.lower() == "bearer"
+            ):
+                return f"Bearer {token}"
+    return None
+
+
+def _safe_page_url(url: str) -> str:
+    """Strip query parameters and fragments that may contain OAuth secrets."""
+    parsed = urlparse(url)
+    return f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+
+
+def _authorization_from_page(page: Any) -> Optional[str]:
+    """Read OIDC authorization from the current page without opening another tab."""
+    parsed = urlparse(page.url)
+    if f"{parsed.scheme}://{parsed.netloc}" != LOGIN_URL:
+        return None
+    local_storage = page.evaluate(
+        """() => Object.entries(window.localStorage).map(([name, value]) => ({name, value}))"""
+    )
+    state = {"origins": [{"origin": LOGIN_URL, "localStorage": local_storage}]}
+    return _authorization_from_storage_state(state)
+
+
+def _latest_open_page(context: Any) -> Optional[Any]:
+    """Return the newest open page, following login redirects and popups."""
+    open_pages = [page for page in context.pages if not page.is_closed()]
+    return open_pages[-1] if open_pages else None
+
+
+def _wait_for_oidc_authorization(
+    context: Any,
+) -> Tuple[Optional[str], Optional[Any]]:
+    """Wait until callback processing stores a usable OIDC access token."""
+    deadline = time.monotonic() + LOGIN_TIMEOUT_SECS
+    while time.monotonic() < deadline:
+        page = _latest_open_page(context)
+        if page is None:
+            print("Browser was closed before login completed.", file=sys.stderr)
+            return None, None
+
+        authorization = _authorization_from_page(page)
+        if authorization:
+            return authorization, page
+
+        current_path = urlparse(page.url).path
+        if current_path in LOGIN_FAILURE_PATHS:
+            print(
+                f"Login failed at {_safe_page_url(page.url)}.",
+                file=sys.stderr,
+            )
+            return None, page
+        page.wait_for_timeout(250)
+
+    page = _latest_open_page(context)
+    final_url = _safe_page_url(page.url) if page else "<browser closed>"
+    print(
+        f"Login did not produce an access token within {LOGIN_TIMEOUT_SECS}s. "
+        f"Final page: {final_url}",
+        file=sys.stderr,
+    )
+    return None, page
 
 
 def _get_cookies_browser_cookie3() -> Optional[List[Any]]:
@@ -111,9 +202,9 @@ def _get_cookies_browser_cookie3() -> Optional[List[Any]]:
 def _get_cookies_playwright(
     auth_file: Optional[str] = None, session_file: Optional[str] = None
 ) -> List[Any]:
-    """Open a headed browser, detect login via OAuth callback, return captured cookies."""
+    """Open a headed browser, complete OIDC login, and return captured cookies."""
     try:
-        from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
+        from playwright.sync_api import sync_playwright
     except ImportError:
         print(
             "playwright is not installed.\n"
@@ -127,7 +218,7 @@ def _get_cookies_playwright(
     print(
         f"Opening browser: {LOGIN_URL}\n"
         "Log in to Infineon Developer Center. "
-        "The browser will close automatically once login is detected.",
+        "The browser will close automatically once login is complete.",
         file=sys.stderr,
     )
 
@@ -160,19 +251,14 @@ def _get_cookies_playwright(
             page = context.new_page()
             page.goto(LOGIN_URL)
 
-            # auth/callback is the reliable post-SSO signal — fires after every login.
-            try:
-                page.wait_for_url("**/auth/callback**", timeout=LOGIN_TIMEOUT_MS)
-                page.wait_for_load_state("networkidle", timeout=15000)
-                print("Login detected.", file=sys.stderr)
-            except PWTimeout:
-                print(
-                    f"Login timed out after {LOGIN_TIMEOUT_SECS}s; capturing whatever cookies exist.",
-                    file=sys.stderr,
-                )
-            except Exception:
-                # Browser closed by user or other interruption.
-                print("Browser closed before login completed.", file=sys.stderr)
+            authorization, page = _wait_for_oidc_authorization(context)
+            if not authorization:
+                try:
+                    browser.close()
+                except Exception:
+                    pass
+                return []
+            print("Login completed and access token received.", file=sys.stderr)
 
             # Snapshot cookies after main-site auth.
             all_cookies: List[Any] = []
@@ -205,16 +291,13 @@ def _get_cookies_playwright(
                 except Exception as _e:
                     print(f"Could not save browser session: {_e}", file=sys.stderr)
 
-            if captured_auth.get("authorization") and auth_file:
+            authorization = captured_auth.get("authorization", authorization)
+            if auth_file:
                 try:
-                    atomic_write(
-                        auth_file, captured_auth["authorization"].encode("utf-8")
-                    )
+                    atomic_write(auth_file, authorization.encode("utf-8"))
                     print(f"Saved auth token to {auth_file}", file=sys.stderr)
                 except Exception as _e:
                     print(f"Could not save auth token: {_e}", file=sys.stderr)
-            elif not captured_auth.get("authorization"):
-                print("No Bearer token intercepted from API requests.", file=sys.stderr)
 
             try:
                 browser.close()

@@ -142,6 +142,41 @@ state are stored under `_CentralScripts/tool_loader/`; these generated files are
 ignored by Git. Subsequent runs reuse cached packages only after validating
 their manifest checksums.
 
+#### Manual Tool Download Fallback
+
+If the automated IDC login or download fails, download the three archives in a
+regular browser while logged in to Infineon Developer Center. Use the exact
+versions and filenames below; the values in
+[`tools.csv`](_CentralScripts/tool_loader/tools.csv) remain authoritative.
+
+| Tool | Version | IDC download | Required filename |
+| --- | --- | --- | --- |
+| AURIX&trade; GCC for Linux x86-64 | 03-2026 | [Download from IDC](https://softwaretools-hosting.infineon.com/packages/com.ifx.tb.tool.aurixgcc/versions/03-2026/artifacts/aurixgcc_03-2026_Linux_x86-x64.zip/download) | `aurixgcc_03-2026_Linux_x86-x64.zip` |
+| TSIM TriCore&trade; instruction-set simulator for Linux x86-64 | 1.18.196 | [Download from IDC](https://softwaretools-hosting.infineon.com/packages/com.ifx.tb.tool.tsimtricoreinstructionsetsimulator/versions/1.18.196/artifacts/tsimtricoreinstructionsetsimulator_1.18.196_Linux_x86-x64.deb/download) | `tsimtricoreinstructionsetsimulator_1.18.196_Linux_x86-x64.deb` |
+| ACS Edge AI Package | 1.0.0 | [Download from IDC](https://softwaretools-hosting.infineon.com/packages/com.ifx.tb.tool.acsedgeaipackage/versions/1.0.0/artifacts/ACS-Edge-AI-Package-1.0.0.zip/download) | `ACS-Edge-AI-Package-1.0.0.zip` |
+
+The ACS package is marked as a Windows package in the IDC manifest, but its ZIP
+also contains the Linux tools required by the Docker image. Accept any licenses
+presented by IDC, then place all three files, unchanged, in:
+
+```text
+_CentralScripts/tool_loader/downloads/
+```
+
+Create the directory if necessary. Ensure that the browser has not added a
+suffix such as `(1)` to a filename. The archives are proprietary and this
+directory is ignored by Git; do not commit or redistribute them.
+
+Rerun setup from the repository root after placing the files:
+
+```bash
+./_CentralScripts/setup.sh
+```
+
+The loader verifies each cached archive against the SHA-256 checksum in the
+manifest. Valid files are reused without another login; missing, renamed, or
+invalid files still trigger the normal download flow or an integrity error.
+
 The script shows progress with animated indicators for each step and completes in approximately:
 - **Fresh installation**: 10-60 minutes (depending on system specs and internet speed)
 - **Subsequent runs**: Much faster due to build caching and optimization
