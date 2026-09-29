@@ -16,11 +16,17 @@
 # Product or any consequences of the use thereof can reasonably be expected to result in personal injury.
 
 
-import json
 from pathlib import Path
 from typing import Union
 
 import requests
+
+# Canonical hardware targets exposed by the conversion service.
+VALID_TARGETS = {"tc3xx", "tc4dx", "arm_m4", "tc4dx_ppu"}
+# Legacy aliases accepted for backwards compatibility.
+TARGET_ALIASES = {"tc3", "tc4", "ppu", "armm4"}
+# Keywords that request a cross-platform comparison over every target.
+COMPARE_KEYWORDS = {"compare", "all"}
 
 
 class CallTools:
@@ -34,7 +40,14 @@ class CallTools:
         output (Path): Path to the output file.
         target_folder (Path): Path to the target folder for storing converted files.
         url (str): URL of the tool server.
-        target (str): Target platform for the model conversion.
+        target (str): Target platform(s) for the model conversion. A single
+            target (e.g. ``"tc4dx"`` or legacy ``"TC4"``), a space/comma
+            separated list, or the keyword ``"compare"``/``"all"`` to benchmark
+            the model on every supported platform.
+        tsim (bool): TriCore timing backend selector. TSIM is the default;
+            set ``tsim=False`` to use the QEMU+CPI alternative instead
+            (TriCore targets only; ignored for ARM/PPU).
+        profile (bool): Enable per-node instruction profiling.
     """
 
     def __init__(
@@ -42,14 +55,19 @@ class CallTools:
         folder: Union[str, Path],
         target: str,
         url: str = "http://localhost:8080/convert",
+        tsim: bool = True,
+        profile: bool = False,
     ):
         """
         Initialize the CallTools instance with the given folder, target, and URL.
 
         Args:
             folder (str or Path): Path to the folder containing the model and input/output files.
-            target (str): Target platform for the model conversion.
+            target (str): Target platform(s) for the model conversion (see class docstring).
             url (str): URL of the tool server (default is "http://localhost:8080/convert").
+            tsim (bool): TriCore timing backend. TSIM is the default; set
+                ``tsim=False`` to use QEMU+CPI instead (TriCore targets only).
+            profile (bool): Enable per-node instruction profiling.
         """
         folder = Path(folder)
         assert folder.exists(), f"folder {folder} does not exist"
@@ -57,47 +75,95 @@ class CallTools:
 
         self.onnx_file = next(folder.rglob("model.onnx"), None)
         if not self.onnx_file:
-            print(f"onnx file not found in {folder}")
+            raise FileNotFoundError(f"onnx file not found in {folder}")
         else:
             assert self.onnx_file.exists(), f"onnx file {self.onnx_file} does not exist"
 
         self.input = next(folder.rglob("input_0.pb"), None)
         if not self.input:
-            print(f"input file not found in {folder}")
+            raise FileNotFoundError(f"input file not found in {folder}")
         else:
             assert self.input.exists(), f"input file {self.input} does not exist"
 
         self.output = next(folder.rglob("output_0.pb"), None)
         if not self.output:
-            print(f"output file not found in {folder}")
+            raise FileNotFoundError(f"output file not found in {folder}")
         else:
             assert self.output.exists(), f"output file {self.output} does not exist"
 
-        self.target_folder = folder / target
-        if self.target_folder.exists():
+        self._validate_target(target)
+        self.target = self._canonical_target_spec(target)
+        self.tsim = tsim
+        self.profile = profile
+        self.is_compare = self._is_compare(self.target)
+
+        # Downloads are organized in per-hardware subfolders, e.g.
+        # ``<folder>/tc4dx/model.c``. In comparison mode the server returns keys
+        # already prefixed with the target name ("tc4dx/model.c", ...) plus the
+        # aggregated "comparison.txt"/"comparison.json", so the base folder is
+        # the model folder itself. In single-target mode the bare filenames are
+        # placed under ``<folder>/<target>/``.
+        self.target_folder = folder if self.is_compare else folder / self.target
+        if self.target_folder.exists() and not self.is_compare:
             print(f"Target folder {self.target_folder} already exists")
-        self.target_folder.mkdir(exist_ok=True)
+        self.target_folder.mkdir(parents=True, exist_ok=True)
 
         try:
             response = requests.get(url, timeout=100)
             response.raise_for_status()
-            self.url = url
         except requests.RequestException as e:
-            print(f"Error reaching the URL {url}: {e}")
+            raise ConnectionError(f"Error reaching the URL {url}: {e}") from e
+        self.url = url
 
-        if target not in ["TC3", "TC4"]:
-            raise ValueError(
-                f"Invalid target '{target}'. Must be one of ['TC3', 'TC4']."
-            )
-        self.target = target
+    @staticmethod
+    def _tokens(target: str):
+        return [t for t in str(target).replace(",", " ").split() if t]
+
+    @classmethod
+    def _is_compare(cls, target: str) -> bool:
+        tokens = cls._tokens(target)
+        if len(tokens) == 1 and tokens[0].lower() in COMPARE_KEYWORDS:
+            return True
+        return len(tokens) > 1
+
+    @classmethod
+    def _validate_target(cls, target: str) -> None:
+        tokens = cls._tokens(target)
+        if not tokens:
+            raise ValueError("No target specified.")
+        if len(tokens) == 1 and tokens[0].lower() in COMPARE_KEYWORDS:
+            return
+        allowed = VALID_TARGETS | TARGET_ALIASES
+        for tok in tokens:
+            if tok.lower() not in allowed:
+                raise ValueError(
+                    f"Invalid target '{tok}'. Must be one of {sorted(VALID_TARGETS)} "
+                    f"(aliases: TC3, TC4), a list, or 'compare'/'all'."
+                )
+
+    @classmethod
+    def _canonical_target_spec(cls, target: str) -> str:
+        tokens = cls._tokens(target)
+        if len(tokens) == 1 and tokens[0].lower() in COMPARE_KEYWORDS:
+            return tokens[0].lower()
+        canonical = {
+            "tc3": "tc3xx",
+            "tc4": "tc4dx",
+            "ppu": "tc4dx_ppu",
+            "armm4": "arm_m4",
+        }
+        return " ".join(canonical.get(token.lower(), token.lower()) for token in tokens)
 
     def convert_model(self):
         """
         Convert the ONNX model using the remote tool server and download the converted files.
 
         The method uploads the ONNX model, input, and output files to the tool server,
-        and then downloads the converted files to the target folder.
+        and then downloads the converted files to the target folder. Returns a dict
+        mapping each downloaded artifact to a success flag.
         """
+        # Comparison runs every platform sequentially, so allow more time.
+        timeout = 3600 if self.is_compare else 900
         with open(self.onnx_file, "rb") as f1, open(self.input, "rb") as f2, open(
             self.output, "rb"
         ) as f3:
@@ -106,27 +172,54 @@ class CallTools:
                 "input_0": f2,
                 "output_0": f3,
             }
-            data = {"target": self.target}
+            data = {
+                "target": self.target,
+                "tsim": str(self.tsim).lower(),
+                "profile": str(self.profile).lower(),
+            }
 
-            response = requests.post(self.url, files=file, data=data, timeout=200)
+            response = requests.post(self.url, files=file, data=data, timeout=timeout)
 
-        if response.status_code != 200:
-            print(f"Error: Received status code {response.status_code}")
-            return
-        elif not self.target_folder.exists():
+        if response.status_code not in (200, 422):
+            print(
+                f"Error: Received status code {response.status_code}: {response.text}"
+            )
+            return {}
+        if not self.target_folder.exists():
             print(f"Error: Target folder {self.target_folder} does not exist")
-            return
-        else:
-            file_urls = json.loads(response.content)
+            return {}
 
-            downloaded_files = {}
-            for filename, url in file_urls.items():
-                response = requests.get(url, stream=True, timeout=200)
-                if response.status_code == 200:
-                    with open(self.target_folder / filename, "wb") as f:
-                        for chunk in response.iter_content(chunk_size=1024):
-                            f.write(chunk)
-                    downloaded_files[filename] = True
-                else:
-                    downloaded_files[filename] = False
-            print(downloaded_files)
+        try:
+            response_data = response.json()
+        except ValueError as exc:
+            raise ValueError("Conversion service returned invalid JSON") from exc
+        if not isinstance(response_data, dict):
+            raise ValueError("Conversion service returned an invalid response")
+        status = response_data.get("status", "ok")
+        file_urls = response_data.get("artifacts", response_data)
+        if not isinstance(file_urls, dict):
+            raise ValueError("Conversion service returned invalid artifacts")
+
+        downloaded_files = {}
+        for filename, url in file_urls.items():
+            dest = (self.target_folder / filename).resolve()
+            target_root = self.target_folder.resolve()
+            if dest != target_root and target_root not in dest.parents:
+                raise ValueError(f"Unsafe artifact path: {filename}")
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                file_response = requests.get(url, stream=True, timeout=timeout)
+                file_response.raise_for_status()
+            except requests.RequestException as exc:
+                downloaded_files[filename] = False
+                print(f"Error downloading {filename}: {exc}")
+                continue
+            with open(dest, "wb") as f:
+                for chunk in file_response.iter_content(chunk_size=1024):
+                    if chunk:
+                        f.write(chunk)
+            downloaded_files[filename] = True
+        if status != "ok":
+            downloaded_files["__conversion_status__"] = False
+        print(downloaded_files)
+        return downloaded_files

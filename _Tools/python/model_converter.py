@@ -17,262 +17,143 @@
 # explicitly approved by Infineon, the Software may not be used in any application where a failure of the Product or any
 # consequences of the use thereof can reasonably be expected to result in personal injury.
 
-import logging
-import os
-import subprocess
+"""Thin wrapper around the nn2ifx benchmarking pipeline.
 
-from config import (
-    ATOL,
-    ATOL_LIMIT,
-    CONVERSION_LOG_FILE,
-    ONNX2C,
-    QEMU,
-    RTOL,
-    RTOL_LIMIT,
-    TC_GCC,
-    TC_LINKER,
-    TC_OBJECT,
-    TEST_DATA_SET,
-    TESTGEN_TC3,
-    TESTGEN_TC4,
-)
+Exposes a small, stable surface used by the Flask conversion service:
 
-logging.basicConfig(
-    filename=CONVERSION_LOG_FILE,
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
+* :data:`TARGETS`            — the supported hardware targets (canonical names)
+* :func:`resolve_target`     — map a user-supplied name (incl. legacy ``TC3``/
+                               ``TC4``) to a canonical target
+* :func:`resolve_targets`    — expand a target spec (single, list, ``all``/
+                               ``compare``) into a list of canonical targets
+* :class:`ModelConverter`    — convert + benchmark a single ONNX model for one
+                               target, or compare it across several targets
+"""
+
+from pathlib import Path
+from typing import Iterable, List, Optional, Union
+
+from nn2ifx.devices import TARGETS as _DEVICE_TARGETS
+from pipeline import run_target, run_compare
+
+# Canonical targets supported by the pipeline.
+TARGETS: List[str] = list(_DEVICE_TARGETS.keys())  # tc4dx, tc3xx, tc4dx_ppu, arm_m4
+
+# Backwards-compatible aliases for the names used by older notebooks/clients.
+TARGET_ALIASES = {
+    "tc3": "tc3xx",
+    "tc4": "tc4dx",
+    "tc3x": "tc3xx",
+    "tc4x": "tc4dx",
+    "tc3xx": "tc3xx",
+    "tc4dx": "tc4dx",
+    "tc4dx_ppu": "tc4dx_ppu",
+    "ppu": "tc4dx_ppu",
+    "arm_m4": "arm_m4",
+    "armm4": "arm_m4",
+}
+
+# Spec values that request a cross-platform comparison over *all* targets.
+COMPARE_KEYWORDS = {"compare", "all"}
+
+
+def resolve_target(name: str) -> str:
+    """Map a user-supplied target name to a canonical pipeline target."""
+    key = TARGET_ALIASES.get(str(name).strip().lower())
+    if key is None or key not in _DEVICE_TARGETS:
+        raise ValueError(
+            f"Invalid target '{name}'. Must be one of "
+            f"{TARGETS} (aliases: TC3, TC4)."
+        )
+    return key
+
+
+def resolve_targets(spec: Union[str, Iterable[str]]) -> List[str]:
+    """Expand a target spec into a list of canonical targets.
+
+    Accepts a single name, an iterable of names, a comma/space separated
+    string, or the keywords ``compare``/``all`` (which expand to every target).
+    """
+    if isinstance(spec, str):
+        tokens = [t for t in spec.replace(",", " ").split() if t]
+    else:
+        tokens = [str(t) for t in spec]
+
+    if len(tokens) == 1 and tokens[0].strip().lower() in COMPARE_KEYWORDS:
+        return list(TARGETS)
+
+    resolved: List[str] = []
+    for tok in tokens:
+        canonical = resolve_target(tok)
+        if canonical not in resolved:
+            resolved.append(canonical)
+    if not resolved:
+        raise ValueError("No valid targets specified.")
+    return resolved
+
+
+def is_compare_spec(spec: Union[str, Iterable[str]]) -> bool:
+    """Return True when the spec requests a multi-target comparison."""
+    if isinstance(spec, str):
+        tokens = [t for t in spec.replace(",", " ").split() if t]
+    else:
+        tokens = [str(t) for t in spec]
+    if len(tokens) == 1 and tokens[0].strip().lower() in COMPARE_KEYWORDS:
+        return True
+    return len(tokens) > 1
 
 
 class ModelConverter:
-    def __init__(self, model_path: str, target: str):
-        assert os.path.exists(model_path), f"model path {model_path} does not exist"
-        self.model_path: str = model_path
+    """Convert and benchmark a single ONNX model via the nn2ifx pipeline."""
 
-        self.target: str = target
-        self.c_file: str = "out/model.c"
-        self.testgen_file: str = "out/testgen.c"
-        self.conversion_log_file: str = CONVERSION_LOG_FILE
-        self.elf_file: str = "out/out.elf"
-        self.test_results_json: str = "out/test_results.json"
+    def __init__(
+        self,
+        model: Union[str, Path],
+        test_data: Union[str, Path],
+        out_dir: Union[str, Path],
+        profile: bool = False,
+        profiler: str = "tsim",
+    ):
+        self.model = Path(model)
+        assert self.model.exists(), f"model {self.model} does not exist"
+        self.test_data = Path(test_data)
+        assert self.test_data.exists(), f"test data dir {self.test_data} does not exist"
+        self.out_dir = Path(out_dir)
+        self.profile = profile
+        self.profiler = profiler
 
-        # Ensure the logfile is empty
-        if os.path.exists(self.conversion_log_file):
-            with open(self.conversion_log_file, "w", encoding="utf-8") as log_file:
-                log_file.truncate(0)
+    def run(self, target: str) -> dict:
+        """Run the pipeline for one target. Returns the harmonized result dict.
 
-        # set tolerances
-        self.rtol: float = RTOL
-        self.rtol_limit: float = RTOL_LIMIT
-        self.atol: float = ATOL
-        self.atol_limit: float = ATOL_LIMIT
-        self.test_data_set: int = TEST_DATA_SET
-
-        logging.info("ModelConverter initialized with model_path: %s", model_path)
-        logging.info("Target: %s", target)
-        logging.info("C file will be generated at: %s", self.c_file)
-
-    def cleanup(self) -> None:
-        """Remove all files from the 'out/' folder."""
-        out_dir = "out"
-
-        if not os.path.exists(out_dir):
-            logging.info(
-                "Output directory '%s' does not exist, nothing to clean up", out_dir
-            )
-            return
-
-        if not os.path.isdir(out_dir):
-            logging.warning("'%s' exists but is not a directory", out_dir)
-            return
-
-        files_deleted = 0
-        for filename in os.listdir(out_dir):
-            file_path = os.path.join(out_dir, filename)
-
-            if os.path.isfile(file_path):
-                try:
-                    os.remove(file_path)
-                    logging.info("Deleted file: %s", file_path)
-                    files_deleted += 1
-                except OSError as e:
-                    logging.error("Failed to delete file %s: %s", file_path, e)
-            else:
-                logging.info("Skipping non-file item: %s", file_path)
-
-        if files_deleted == 0:
-            logging.info("No files found in '%s' folder to delete", out_dir)
-        else:
-            logging.info(
-                "Cleanup completed: %d file(s) deleted from '%s' folder",
-                files_deleted,
-                out_dir,
-            )
-
-    def get_model_file(self) -> str:
-        for root, _, files in os.walk(self.model_path):
-            for file in files:
-                if file == "model.onnx":
-                    model_file_path = os.path.join(root, file)
-                    logging.info("Found model file: %s", model_file_path)
-                    return model_file_path
-        raise FileNotFoundError(
-            f"No model.onnx file found in {self.model_path} or its subfolders"
+        Output files are written to ``<out_dir>/<target>/`` and include
+        ``model.c``, ``main.c``, ``model.elf``, ``model.md``, ``pipeline.log``,
+        ``results.json`` and (on TriCore TSIM runs) ``model.tsim_prof.log``.
+        """
+        canonical = resolve_target(target)
+        target_out = self.out_dir / canonical
+        return run_target(
+            target=canonical,
+            model=self.model,
+            test_data=self.test_data,
+            out=target_out,
+            profile=self.profile,
+            profiler=self.profiler,
         )
 
-    def generate_c_file(self) -> None:
-        model_file = self.get_model_file()
-        command = ""
-        if self.target == "TC3":
-            command = f"{ONNX2C} {model_file} -punionize -l3 --mtc162 > {self.c_file}"
-        elif self.target == "TC4":
-            command = f"{ONNX2C} {model_file} -punionize -l3 --mtc18 > {self.c_file}"
-        else:
-            logging.error("Unknown target %s, select from ['TC3', 'TC4']", self.target)
-            raise ValueError(
-                f"Unknown target {self.target}, select from ['TC3', 'TC4']"
-            )
+    def compare(self, targets: Optional[Iterable[str]] = None) -> dict:
+        """Benchmark the model across several targets and aggregate a table.
 
-        logging.info("Generating C file with command: %s", command)
-        result = subprocess.run(
-            command,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            check=False,
+        Writes ``comparison.txt``/``comparison.json`` (plus per-target
+        ``results.json``) under ``<out_dir>/``. Returns the aggregated dict.
+        """
+        target_list = (
+            list(TARGETS) if targets is None else [resolve_target(t) for t in targets]
         )
-        logging.info(result.stdout.decode())
-
-        if os.path.exists(self.c_file) and os.path.getsize(self.c_file) > 0:
-            logging.info("C file generated successfully: %s", self.c_file)
-        else:
-            if not os.path.exists(self.c_file):
-                logging.error(
-                    "Failed to generate testgen file: %s (file does not exist)",
-                    self.c_file,
-                )
-            elif os.path.getsize(self.c_file) == 0:
-                logging.error(
-                    "Failed to generate testgen file: %s (file is empty)", self.c_file
-                )
-
-    def generate_testgen_file(self) -> None:
-        command = ""
-        if self.target == "TC3":
-            command = f"{TESTGEN_TC3} {self.model_path} {self.rtol} {self.atol} {self.rtol_limit} {self.atol_limit} {self.test_data_set} -punionize -l3 --mtc162 > {self.testgen_file}"
-        elif self.target == "TC4":
-            command = f"{TESTGEN_TC4} {self.model_path} {self.rtol} {self.atol} {self.rtol_limit} {self.atol_limit} {self.test_data_set} -punionize -l3 --mtc18 > {self.testgen_file}"
-        else:
-            logging.error("Unknown target %s, select from ['TC3', 'TC4']", self.target)
-            raise ValueError(
-                f"Unknown target {self.target}, select from ['TC3', 'TC4']"
-            )
-
-        logging.info("Generating testgen file with command: %s", command)
-        logging.info(
-            "rtol: %s, atol: %s, rtol_limit: %s, atol_limit: %s, test_data_set: %s",
-            self.rtol,
-            self.atol,
-            self.rtol_limit,
-            self.atol_limit,
-            self.test_data_set,
+        return run_compare(
+            targets=target_list,
+            model=self.model,
+            test_data=self.test_data,
+            out=self.out_dir,
+            profile=self.profile,
+            profiler=self.profiler,
         )
-        result = subprocess.run(
-            command,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            check=False,
-        )
-        logging.info(result.stdout.decode())
-
-        if os.path.exists(self.testgen_file) and os.path.getsize(self.testgen_file) > 0:
-            logging.info("Testgen file generated successfully: %s", self.testgen_file)
-        else:
-            if not os.path.exists(self.testgen_file):
-                logging.error(
-                    "Failed to generate testgen file: %s (file does not exist)",
-                    self.testgen_file,
-                )
-            elif os.path.getsize(self.testgen_file) == 0:
-                logging.error(
-                    "Failed to generate testgen file: %s (file is empty)",
-                    self.testgen_file,
-                )
-
-    def compile_model(self) -> None:
-        command = ""
-        if self.target == "TC3":
-            command = f"{TC_GCC} -Ofast -mcpu=tc39xx -save-temps -Wl,-gc-sections -Wl,--extmap=a -nocrt0 -mcpu=tc39xx -Xlinker --mcpu=tc162 -I/home/ubuntu/include -T{TC_LINKER} {TC_OBJECT} {self.testgen_file} -o {self.elf_file}"
-        elif self.target == "TC4":
-            command = f"{TC_GCC} -Ofast -mcpu=tc4DAx -save-temps -Wl,-gc-sections -Wl,--extmap=a -nocrt0 -mcpu=tc4DAx -Xlinker --mcpu=tc18 -I/home/ubuntu/include -T{TC_LINKER} {TC_OBJECT} {self.testgen_file} -o {self.elf_file}"
-        else:
-            logging.error("Unknown target %s, select from ['TC3', 'TC4']", self.target)
-            raise ValueError(
-                f"Unknown target {self.target}, select from ['TC3', 'TC4']"
-            )
-
-        logging.info("Compiling model with command: %s", command)
-        result = subprocess.run(
-            command,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            check=False,
-        )
-        logging.info(result.stdout.decode())
-
-        if os.path.exists(self.elf_file) and os.path.getsize(self.elf_file) > 0:
-            logging.info("Model compiled successfully: %s", self.elf_file)
-        else:
-            if not os.path.exists(self.elf_file):
-                logging.error(
-                    "Failed to compile model: %s (file does not exist)", self.elf_file
-                )
-            elif os.path.getsize(self.elf_file) == 0:
-                logging.error(
-                    "Failed to compile model: %s (file is empty)", self.elf_file
-                )
-
-    def benchmark(self):
-        command = ""
-        if self.target == "TC3":
-            command = f"{QEMU} -display none -M tricore_tsim162 -semihosting -kernel {self.elf_file} > QEMU.log"
-        elif self.target == "TC4":
-            command = f"{QEMU} -display none -M tricore_tsim18 -semihosting -kernel {self.elf_file} > QEMU.log"
-        else:
-            logging.error("Unknown target %s, select from ['TC3', 'TC4']", self.target)
-            raise ValueError(
-                f"Unknown target {self.target}, select from ['TC3', 'TC4']"
-            )
-
-        logging.info("Benchmarking model with command: %s", command)
-        try:
-            result = subprocess.run(
-                command,
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                check=False,
-                timeout=200,
-            )
-        except subprocess.TimeoutExpired:
-            logging.error("Benchmarking command timed out and was interrupted.")
-            return
-        logging.info(result.stdout.decode())
-
-        if os.path.exists("QEMU.log") and os.path.getsize("QEMU.log") > 0:
-            logging.info(
-                "Benchmarking completed successfully, results saved in QEMU.log"
-            )
-            # Add QEMU.log content to model_conversion.log
-            with open("QEMU.log", "r", encoding="utf-8") as qemu_log_file:
-                qemu_log_content = qemu_log_file.read()
-                logging.info("QEMU.log content:\n%s", qemu_log_content)
-        else:
-            if not os.path.exists("QEMU.log"):
-                logging.error(
-                    "Failed to benchmark model: QEMU.log (file does not exist)"
-                )
-            elif os.path.getsize("QEMU.log") == 0:
-                logging.error("Failed to benchmark model: QEMU.log (file is empty)")

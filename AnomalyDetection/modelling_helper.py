@@ -170,39 +170,28 @@ def mlp_autoencoder(input_dim, bottleneck, layers=3, p_drop=0.2):
 
     # Calculate layer sizes for gradual compression
     if layers == 1:
-        # Special case: direct compression to bottleneck
         encoder_sizes = [bottleneck]
-        decoder_sizes = [input_dim]
+        decoder_sizes = []
     else:
-        # Calculate intermediate layer sizes using geometric progression
-        # This ensures smooth compression from input_dim to bottleneck
         ratio = (bottleneck / input_dim) ** (1 / layers)
-        encoder_sizes = []
-        for i in range(layers):
-            size = int(input_dim * (ratio ** (i + 1)))
-            # Ensure we don't go below bottleneck size
-            size = max(size, bottleneck)
-            encoder_sizes.append(size)
+        encoder_sizes = [
+            max(int(input_dim * (ratio ** (i + 1))), bottleneck) for i in range(layers)
+        ]
+        decoder_sizes = encoder_sizes[:-1][::-1]
 
-        # Decoder sizes are symmetric (reverse of encoder, excluding bottleneck)
-        decoder_sizes = encoder_sizes[:-1][::-1] + [input_dim]
-
-    # Encoder: gradually compress input to bottleneck
+    # Decoder hidden layers
     x = inputs
     for i, units in enumerate(encoder_sizes):
-        x = regularized_dense(units=units, name=f"encoder_layer_{i+1}")(x)
-        x = tf.keras.layers.Dropout(p_drop, name=f"encoder_dropout_{i+1}")(x)
+        x = regularized_dense(units=units, name=f"encoder_layer_{i + 1}")(x)
+        x = tf.keras.layers.Dropout(p_drop, name=f"encoder_dropout_{i + 1}")(x)
 
-    # Bottleneck layer
     x = regularized_dense(units=bottleneck, name="bottleneck")(x)
     x = tf.keras.layers.Dropout(p_drop, name="bottleneck_dropout")(x)
 
-    # Decoder: gradually expand back to input size
     for i, units in enumerate(decoder_sizes):
-        x = regularized_dense(units=units, name=f"decoder_layer_{i+1}")(x)
-        x = tf.keras.layers.Dropout(p_drop, name=f"decoder_dropout_{i+1}")(x)
+        x = regularized_dense(units=units, name=f"decoder_layer_{i + 1}")(x)
+        x = tf.keras.layers.Dropout(p_drop, name=f"decoder_dropout_{i + 1}")(x)
 
-    # Output layer (no activation for reconstruction)
     outputs = tf.keras.layers.Dense(
         units=input_dim,
         activation="linear",

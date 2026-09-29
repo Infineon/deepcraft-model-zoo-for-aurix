@@ -26,7 +26,8 @@ source /home/ubuntu/venv/bin/activate
 case "${MODE}" in
     "api")
         echo "Starting in API mode..."
-        python /home/ubuntu/onnx2c_flask_server.py
+        cd /home/ubuntu/app || exit 1
+        python /home/ubuntu/app/onnx2c_flask_server.py
         ;;
     "debug")
         echo "Starting in debug mode with Jupyter..."

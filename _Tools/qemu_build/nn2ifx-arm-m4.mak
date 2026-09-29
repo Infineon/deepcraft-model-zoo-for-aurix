@@ -1,0 +1,1 @@
+CONFIG_MPS2=y

@@ -1,0 +1,20 @@
+{
+  "title": "In-Cabin Monitoring with MiniDMS Model",
+  "description": "This example demonstrates in-cabin driver monitoring using the MiniDMS model.",
+  "long_description": "This example demonstrates in-cabin driver monitoring using the MiniDMS model. The system uses a camera to observe the driver and classify their behavior, helping to ensure safety and attention while driving.",
+  "algorithm": "Image Classification",
+  "sensors": ["Camera"],
+  "domain": ["Vision"],
+  "application": ["Automotive"],
+  "use_case": ["Driver Monitoring"],
+  "kit": ["AURIX\u2122 KIT_A3G_TC4D7_LITE"],
+  "device": ["AURIX\u2122 TC4x"],
+  "type": ["Model Development, Model Deployment"],
+  "workflow": ["ML Development", "ML Deployment"],
+  "thumbnail_image_id": "automotive_in-cabin.webp",
+  "main_image_id": "automotive_in-cabin.webp",
+  "brand_image_id": "deepcraft.webp",
+  "brand_url": "https://www.infineon.com/design-resources/embedded-software/deepcraft-edge-ai-solutions",
+  "links": [{"label": "Model Zoo", "url": "https://github.com/Infineon/deepcraft-model-zoo-for-aurix","heading": "Model Zoo for AURIX\u2122", "sub-heading": "Find your tools & Learn about getting started with developing Edge AI for AURIX\u2122"},
+            {"label": "GitHub", "url": "https://github.com/Infineon/deepcraft-model-zoo-for-aurix/tree/main/DriverMonitoringSystem"}]
+}

@@ -1,3 +1,17 @@
 AURIX-GCC provided in this repository is GPL-based software.
 The source code is available at https://github.com/EEESlab/tricore-gcc
 For a specific version of the source code, please send an email to AIModelZoo@infineon.com
+
+The Arm GCC cross-compiler (gcc-arm-none-eabi) and newlib used for the
+Arm Cortex-M4/M7 targets are GPL-based software installed from the Ubuntu
+package repositories. The corresponding source code is available via
+"apt-get source gcc-arm-none-eabi" and from
+https://launchpad.net/ubuntu/+source/gcc-arm-none-eabi
+
+QEMU (used to emulate the TriCore and Arm targets) is licensed under GPLv2.
+Its source is built from _Tools/qemu_build; upstream sources are available at
+https://www.qemu.org
+
+Third-party tools (ARC LLVM/clang, Synopsys nSIM, and TSIM) are distributed
+under their own licenses included inside their respective archives. See
+_LICENSES/README.md for details.

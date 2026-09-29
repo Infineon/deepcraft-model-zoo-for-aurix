@@ -1,0 +1,243 @@
+# Copyright (c) 2025, Infineon Technologies AG, or an affiliate of Infineon Technologies AG. All rights reserved.
+#
+# This software, associated documentation and materials ("Software") is owned by Infineon Technologies AG or one of
+# its affiliates ("Infineon") and is protected by and subject to worldwide patent protection, worldwide copyright laws,
+# and international treaty provisions. Therefore, you may use this Software only as provided in the license agreement
+# accompanying the software package from which you obtained this Software. If no license agreement applies, then any use,
+# reproduction, modification, translation, or compilation of this Software is prohibited without the express written
+# permission of Infineon.
+#
+# Disclaimer: UNLESS OTHERWISE EXPRESSLY AGREED WITH INFINEON, THIS SOFTWARE IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, ALL WARRANTIES OF NON-INFRINGEMENT OF THIRD-PARTY RIGHTS AND IMPLIED
+# WARRANTIES SUCH AS WARRANTIES OF FITNESS FOR A SPECIFIC USE/PURPOSE OR MERCHANTABILITY. Infineon reserves the right to make
+# changes to the Software without notice. You are responsible for properly designing, programming, and testing the
+# functionality and safety of your intended application of the Software, as well as complying with any legal requirements
+# related to its use. Infineon does not guarantee that the Software will be free from intrusion, data theft or loss, or other
+# breaches ("Security Breaches"), and Infineon shall have no liability arising out of any Security Breaches. Unless otherwise
+# explicitly approved by Infineon, the Software may not be used in any application where a failure of the Product or any
+# consequences of the use thereof can reasonably be expected to result in personal injury.
+
+
+
+# syntax=docker/dockerfile:1.2
+
+# ============================================================================
+# Stage 1: Builder — build QEMU (TriCore + ARM) and the CPI counter plugins
+# ============================================================================
+# Ubuntu 24.04 (noble) is required: the ARC/PPU clang-21 toolchain is built
+# against the newer glibc shipped with 24.04 and will not run on 22.04.
+FROM ubuntu:24.04 AS builder
+ARG DEBIAN_FRONTEND=noninteractive
+USER root
+
+# Configure APT for faster downloads: parallel downloads and optimized settings
+RUN echo 'Acquire::Queue-Mode "host";' > /etc/apt/apt.conf.d/99parallel && \
+    echo 'Acquire::http::Pipeline-Depth "10";' >> /etc/apt/apt.conf.d/99parallel && \
+    echo 'APT::Install-Recommends "false";' > /etc/apt/apt.conf.d/99custom && \
+    echo 'APT::Install-Suggests "false";' >> /etc/apt/apt.conf.d/99custom && \
+    echo 'APT::Get::Assume-Yes "true";' >> /etc/apt/apt.conf.d/99custom && \
+    echo 'Acquire::Retries "3";' >> /etc/apt/apt.conf.d/99custom
+
+# Build dependencies for QEMU (TriCore + ARM) and the QEMU plugins.
+#   - libcapstone-dev: required for ARM QEMU plugin instruction disassembly
+#   - libglib2.0-dev:  required by the ARM CPI plugin (plugin API v4 header)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    git build-essential pkg-config \
+    libglib2.0-dev libfdt-dev libpixman-1-dev libcapstone-dev \
+    zlib1g-dev ninja-build meson python3 python3-venv python3-pip
+
+# --- Build both QEMU emulators from source (TriCore fork + upstream ARM) ---
+COPY _Tools/qemu_build /tmp/Tools/qemu_build
+RUN chmod +x /tmp/Tools/qemu_build/build_qemu.sh && \
+    # build_qemu.sh writes its output binaries to the parent of its own directory
+    /tmp/Tools/qemu_build/build_qemu.sh && \
+    test -x /tmp/Tools/qemu-system-tricore && \
+    test -x /tmp/Tools/qemu-system-arm && \
+    /tmp/Tools/qemu-system-arm -machine help | grep -q 'mps2-an386'
+
+# --- Build the CPI counter plugins (TriCore plugin API v1 + ARM plugin API v4) ---
+COPY _Tools/qemu_plugin /tmp/qemu_plugin
+RUN cd /tmp/qemu_plugin && \
+    gcc -shared -fPIC -fvisibility=hidden -O2 -I. \
+        -o libcpi_counter.so cpi_counter.c && \
+    gcc -shared -fPIC -fvisibility=hidden -O2 -DTARGET_ARM -I. \
+        $(pkg-config --cflags glib-2.0) \
+        -o libcpi_counter_arm.so cpi_counter.c && \
+    test -f libcpi_counter.so && test -f libcpi_counter_arm.so
+
+
+# ============================================================================
+# Stage 2: Runtime image — toolchains, emulators, and the conversion service
+# ============================================================================
+FROM ubuntu:24.04
+ARG DEBIAN_FRONTEND=noninteractive
+USER root
+
+# Configure APT for faster downloads: parallel downloads and optimized settings
+RUN echo 'Acquire::Queue-Mode "host";' > /etc/apt/apt.conf.d/99parallel && \
+    echo 'Acquire::http::Pipeline-Depth "10";' >> /etc/apt/apt.conf.d/99parallel && \
+    echo 'APT::Install-Recommends "false";' > /etc/apt/apt.conf.d/99custom && \
+    echo 'APT::Install-Suggests "false";' >> /etc/apt/apt.conf.d/99custom && \
+    echo 'APT::Get::Assume-Yes "true";' >> /etc/apt/apt.conf.d/99custom && \
+    echo 'Acquire::Retries "3";' >> /etc/apt/apt.conf.d/99custom
+
+# Runtime dependencies:
+#   - QEMU shared libs:    libpixman-1-0, libfdt1, libglib2.0-0, libcapstone4
+#   - TSIM / nSIM curses:  libncurses6, libtinfo6 (nSIM links the legacy .so.5
+#                          SONAMEs; compatibility symlinks are added below)
+#   - ARM cross toolchain: gcc-arm-none-eabi + libnewlib-arm-none-eabi
+#   - PPU LLVM/nSIM libs:  zlib1g, libxml2
+#   - Python + Jupyter:    python3, python3-venv, python3-pip
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+    unzip xz-utils python3 python3-venv python3-pip \
+    libpixman-1-0 libfdt1 libglib2.0-0 libcapstone4 \
+    libncurses6 libtinfo6 zlib1g libxml2 \
+    gcc-arm-none-eabi libnewlib-arm-none-eabi
+
+# Create user and workspace
+# Ubuntu 24.04 ships with a pre-existing 'ubuntu' user (UID 1000); only create
+# it if missing so the build is idempotent across base-image versions.
+RUN id -u ubuntu >/dev/null 2>&1 || useradd -m -s /bin/bash ubuntu && \
+    mkdir -p /home/ubuntu && chown ubuntu:ubuntu /home/ubuntu
+USER ubuntu
+WORKDIR /home/ubuntu
+RUN mkdir -p out workspace
+
+# --- QEMU emulators + CPI plugins from the builder stage ---
+COPY --from=builder --chown=ubuntu:ubuntu /tmp/Tools/qemu-system-tricore /home/ubuntu/qemu-system-tricore
+COPY --from=builder --chown=ubuntu:ubuntu /tmp/Tools/qemu-system-arm     /home/ubuntu/qemu-system-arm
+COPY --from=builder --chown=ubuntu:ubuntu /tmp/qemu_plugin/libcpi_counter.so     /home/ubuntu/qemu_plugin/libcpi_counter.so
+COPY --from=builder --chown=ubuntu:ubuntu /tmp/qemu_plugin/libcpi_counter_arm.so /home/ubuntu/qemu_plugin/libcpi_counter_arm.so
+RUN chmod +x /home/ubuntu/qemu-system-tricore /home/ubuntu/qemu-system-arm
+
+# --- TriCore GCC cross-compiler (AURIX-GCC 03-2026) ---
+# The distribution ZIP ships only target-prefixed binutils; GCC also invokes
+# them by their unprefixed names, so add the unprefixed symlinks it expects.
+ARG AURIX_GCC_ARCHIVE
+COPY --chown=ubuntu:ubuntu _CentralScripts/tool_loader/downloads/${AURIX_GCC_ARCHIVE} /home/ubuntu/
+RUN mkdir tricore_gcc && \
+    unzip -qo "$AURIX_GCC_ARCHIVE" -d tricore_gcc && \
+    rm "$AURIX_GCC_ARCHIVE" && \
+    chmod -R +x /home/ubuntu/tricore_gcc/bin/ /home/ubuntu/tricore_gcc/libexec/ && \
+    for tool in as ld nm objcopy ar ranlib strip; do \
+        if [ -x "/home/ubuntu/tricore_gcc/bin/tricore-elf-$tool" ]; then \
+            ln -sf "tricore-elf-$tool" "/home/ubuntu/tricore_gcc/bin/$tool"; \
+        fi; \
+    done && \
+    test -x /home/ubuntu/tricore_gcc/bin/tricore-elf-gcc
+
+# --- ACS Edge AI package (manifest-pinned; currently package 1.0.0) ---
+# One vendor ZIP replaces the former separate onnx2c / arc_llvm / nSim assets;
+# only its Linux subtree is extracted (mirrors _CentralScripts/setup.sh). The
+# duplicate LLVM alias binaries are collapsed to symlinks to save image space,
+# and the final greps validate the exact tool versions bundled in the image.
+ARG ACS_ARCHIVE
+ARG ACS_VERSION
+ENV ACS_LINUX_DIR="/home/ubuntu/acs_edge_ai/${ACS_VERSION}/Linux"
+COPY --chown=ubuntu:ubuntu _CentralScripts/tool_loader/downloads/${ACS_ARCHIVE} /home/ubuntu/
+RUN mkdir -p "/home/ubuntu/acs_edge_ai/${ACS_VERSION}" && \
+    unzip -qo "$ACS_ARCHIVE" 'Linux/*' -d "/home/ubuntu/acs_edge_ai/${ACS_VERSION}" && \
+    rm "$ACS_ARCHIVE" && \
+    chmod +x "$ACS_LINUX_DIR/onnx2c-ifx/bin/onnx2c" "$ACS_LINUX_DIR/nSIM_64/bin/nsimdrv" && \
+    chmod -R +x "$ACS_LINUX_DIR/arc-llvm/bin" && \
+    for alias in clang clang++ clang-cl clang-cpp; do \
+        if [ ! -L "$ACS_LINUX_DIR/arc-llvm/bin/$alias" ] && \
+           cmp -s "$ACS_LINUX_DIR/arc-llvm/bin/clang-21" "$ACS_LINUX_DIR/arc-llvm/bin/$alias"; then \
+            ln -sf clang-21 "$ACS_LINUX_DIR/arc-llvm/bin/$alias"; \
+        fi; \
+    done && \
+    if [ ! -L "$ACS_LINUX_DIR/arc-llvm/bin/ld.lld" ] && \
+       cmp -s "$ACS_LINUX_DIR/arc-llvm/bin/lld" "$ACS_LINUX_DIR/arc-llvm/bin/ld.lld"; then \
+        ln -sf lld "$ACS_LINUX_DIR/arc-llvm/bin/ld.lld"; \
+    fi && \
+    mkdir -p /home/ubuntu/nsim_compat_lib && \
+    ln -sf /usr/lib/x86_64-linux-gnu/libncurses.so.6 /home/ubuntu/nsim_compat_lib/libncurses.so.5 && \
+    ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6   /home/ubuntu/nsim_compat_lib/libtinfo.so.5 && \
+    "$ACS_LINUX_DIR/onnx2c-ifx/bin/onnx2c" --version 2>&1 | grep -q 'ifx-V1.1.0' && \
+    "$ACS_LINUX_DIR/arc-llvm/bin/clang" --version 2>&1 | grep -q '21.1.8' && \
+    LD_LIBRARY_PATH=/home/ubuntu/nsim_compat_lib "$ACS_LINUX_DIR/nSIM_64/bin/nsimdrv" --version 2>&1 | grep -q '2025.12'
+
+# --- TSIM cycle-accurate TriCore ISS (optional, TC3xx + TC4Dx) ---
+# Single standalone binary (TSIM 1.18.196) covering both TriCore generations:
+# TC3xx via -tc162p and TC4Dx via -tc18_bstep.
+ARG TSIM_ARCHIVE
+ARG TSIM_VERSION
+COPY --chown=ubuntu:ubuntu _CentralScripts/tool_loader/downloads/${TSIM_ARCHIVE} /home/ubuntu/
+RUN mkdir -p /tmp/tsim-package /home/ubuntu/tsim && \
+    dpkg-deb -x "$TSIM_ARCHIVE" /tmp/tsim-package && \
+    cp "/tmp/tsim-package/opt/Tools/TSIM-Tricore-instruction-set-simulator/${TSIM_VERSION}/bin/tsim16p_e" \
+       /home/ubuntu/tsim/tsim16p_e && \
+    chmod +x /home/ubuntu/tsim/tsim16p_e && \
+    rm -rf "$TSIM_ARCHIVE" /tmp/tsim-package
+
+# --- Linker scripts / startup objects / device configs ---
+COPY --chown=ubuntu:ubuntu _Tools/linker_scripts/tsim-lto.ld \
+                          _Tools/linker_scripts/crttsim.o \
+                          _Tools/linker_scripts/arm_mps2.ld \
+                          _Tools/linker_scripts/crt_arm.s \
+                          _Tools/linker_scripts/tsim_MConfig \
+                          _Tools/linker_scripts/tsim_MConfig_tc3 \
+                          _Tools/linker_scripts/tsim_MConfig_tc4 \
+                          /home/ubuntu/linker_scripts/
+
+# --- Tool licenses ---
+COPY --chown=ubuntu:ubuntu _LICENSES /home/ubuntu/LICENSES
+
+# --- Python environment with Jupyter ---
+RUN python3 -m venv venv
+ENV PATH="/home/ubuntu/venv/bin:$PATH"
+RUN --mount=type=cache,target=/home/ubuntu/.cache/pip \
+    pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir \
+        flask requests jupyter notebook ipywidgets \
+        numpy onnx python-dotenv && \
+    find /home/ubuntu/venv -name "*.pyc" -delete && \
+    find /home/ubuntu/venv -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+
+# --- Conversion service application (nn2ifx pipeline + Flask API) ---
+COPY --chown=ubuntu:ubuntu _Tools/python/nn2ifx                 /home/ubuntu/app/nn2ifx
+COPY --chown=ubuntu:ubuntu _Tools/python/pipeline.py            /home/ubuntu/app/pipeline.py
+COPY --chown=ubuntu:ubuntu _Tools/python/model_converter.py     /home/ubuntu/app/model_converter.py
+COPY --chown=ubuntu:ubuntu _Tools/python/onnx2c_flask_server.py /home/ubuntu/app/onnx2c_flask_server.py
+COPY --chown=ubuntu:ubuntu _Tools/python/debug_conversion.ipynb /home/ubuntu/app/debug_conversion.ipynb
+COPY --chown=ubuntu:ubuntu source.txt /home/ubuntu/
+
+# ----------------------------------------------------------------------------
+# Tool paths consumed by nn2ifx/config.py (read from the process environment).
+# ----------------------------------------------------------------------------
+ENV ONNX2C_CMD="${ACS_LINUX_DIR}/onnx2c-ifx/bin/onnx2c" \
+    ONNX2C_INCLUDE="${ACS_LINUX_DIR}/onnx2c-ifx/include" \
+    TRICORE_GCC_CMD="/home/ubuntu/tricore_gcc/bin/tricore-elf-gcc" \
+    TRICORE_EMULATOR_CMD="/home/ubuntu/qemu-system-tricore" \
+    TRICORE_LINKER_SCRIPT="/home/ubuntu/linker_scripts/tsim-lto.ld" \
+    TRICORE_CRT="/home/ubuntu/linker_scripts/crttsim.o" \
+    ARM_GCC_CMD="/usr/bin/arm-none-eabi-gcc" \
+    ARM_EMULATOR_CMD="/home/ubuntu/qemu-system-arm" \
+    ARM_LINKER_SCRIPT="/home/ubuntu/linker_scripts/arm_mps2.ld" \
+    ARM_CRT="/home/ubuntu/linker_scripts/crt_arm.s" \
+    ARC_CLANG_CMD="${ACS_LINUX_DIR}/arc-llvm/bin/clang" \
+    ARC_SYSROOT="${ACS_LINUX_DIR}/arc-llvm/lib/newlib_TC4P" \
+    NSIM_CMD="${ACS_LINUX_DIR}/nSIM_64/bin/nsimdrv" \
+    NSIM_TCF="${ACS_LINUX_DIR}/nSIM_64/tcf/TC4D.tcf" \
+    TSIM_CMD="/home/ubuntu/tsim/tsim16p_e" \
+    TSIM_MCONFIG="/home/ubuntu/linker_scripts/tsim_MConfig" \
+    QEMU_PLUGIN_DIR="/home/ubuntu/qemu_plugin"
+
+# Make the nSIM and ARC toolchain libraries discoverable at runtime. The nSIM
+# compat dir provides the legacy libncurses.so.5 / libtinfo.so.5 SONAMEs.
+ENV PATH="${ACS_LINUX_DIR}/arc-llvm/bin:${ACS_LINUX_DIR}/nSIM_64/bin:$PATH" \
+    LD_LIBRARY_PATH="/home/ubuntu/nsim_compat_lib:${ACS_LINUX_DIR}/arc-llvm/lib"
+
+# --- Entrypoint ---
+COPY --chown=ubuntu:ubuntu _Tools/entrypoint.sh /home/ubuntu/
+RUN chmod +x /home/ubuntu/entrypoint.sh
+
+ENV MODE=api
+EXPOSE 8080 8888
+
+ENTRYPOINT ["/home/ubuntu/entrypoint.sh"]
