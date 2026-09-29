@@ -32,16 +32,14 @@ Usage:
 Default output: infineon.cookies
 
 Environment variables:
-    LOGIN_TIMEOUT (seconds): Timeout for completing login and receiving an
-                             access token (default: 180s)
+    LOGIN_TIMEOUT (seconds): Timeout for waiting for the login callback
+                             (default: 180s)
 """
 
 import json
 import os
 import sys
-import time
-from typing import Optional, List, Any, Dict, Tuple
-from urllib.parse import urlparse
+from typing import Optional, List, Any, Dict
 
 from security_utils import SESSION_HOSTS, atomic_write, parse_allowed_url
 
@@ -54,10 +52,8 @@ LOGIN_URL = "https://softwaretools.infineon.com"
 HOSTING_URL = "https://softwaretools-hosting.infineon.com"
 # Allow override via environment variable (in seconds)
 LOGIN_TIMEOUT_SECS = int(os.environ.get("LOGIN_TIMEOUT", "180"))
+LOGIN_TIMEOUT_MS = LOGIN_TIMEOUT_SECS * 1000
 OIDC_USER_KEY_PREFIX = "oidc.user:"
-LOGIN_FAILURE_PATHS = frozenset(
-    {"/auth/callback-error", "/forbidden", "/user-not-verified"}
-)
 
 BROWSERS = [
     "chrome",
@@ -110,64 +106,6 @@ def _authorization_from_storage_state(state: Dict[str, Any]) -> Optional[str]:
     return None
 
 
-def _safe_page_url(url: str) -> str:
-    """Strip query parameters and fragments that may contain OAuth secrets."""
-    parsed = urlparse(url)
-    return f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
-
-
-def _authorization_from_page(page: Any) -> Optional[str]:
-    """Read OIDC authorization from the current page without opening another tab."""
-    parsed = urlparse(page.url)
-    if f"{parsed.scheme}://{parsed.netloc}" != LOGIN_URL:
-        return None
-    local_storage = page.evaluate(
-        """() => Object.entries(window.localStorage).map(([name, value]) => ({name, value}))"""
-    )
-    state = {"origins": [{"origin": LOGIN_URL, "localStorage": local_storage}]}
-    return _authorization_from_storage_state(state)
-
-
-def _latest_open_page(context: Any) -> Optional[Any]:
-    """Return the newest open page, following login redirects and popups."""
-    open_pages = [page for page in context.pages if not page.is_closed()]
-    return open_pages[-1] if open_pages else None
-
-
-def _wait_for_oidc_authorization(
-    context: Any,
-) -> Tuple[Optional[str], Optional[Any]]:
-    """Wait until callback processing stores a usable OIDC access token."""
-    deadline = time.monotonic() + LOGIN_TIMEOUT_SECS
-    while time.monotonic() < deadline:
-        page = _latest_open_page(context)
-        if page is None:
-            print("Browser was closed before login completed.", file=sys.stderr)
-            return None, None
-
-        authorization = _authorization_from_page(page)
-        if authorization:
-            return authorization, page
-
-        current_path = urlparse(page.url).path
-        if current_path in LOGIN_FAILURE_PATHS:
-            print(
-                f"Login failed at {_safe_page_url(page.url)}.",
-                file=sys.stderr,
-            )
-            return None, page
-        page.wait_for_timeout(250)
-
-    page = _latest_open_page(context)
-    final_url = _safe_page_url(page.url) if page else "<browser closed>"
-    print(
-        f"Login did not produce an access token within {LOGIN_TIMEOUT_SECS}s. "
-        f"Final page: {final_url}",
-        file=sys.stderr,
-    )
-    return None, page
-
-
 def _get_cookies_browser_cookie3() -> Optional[List[Any]]:
     """Try to read existing session cookies from locally installed Linux browsers."""
     try:
@@ -204,7 +142,7 @@ def _get_cookies_playwright(
 ) -> List[Any]:
     """Open a headed browser, complete OIDC login, and return captured cookies."""
     try:
-        from playwright.sync_api import sync_playwright
+        from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
     except ImportError:
         print(
             "playwright is not installed.\n"
@@ -218,7 +156,7 @@ def _get_cookies_playwright(
     print(
         f"Opening browser: {LOGIN_URL}\n"
         "Log in to Infineon Developer Center. "
-        "The browser will close automatically once login is complete.",
+        "The browser will close automatically once login is detected.",
         file=sys.stderr,
     )
 
@@ -251,8 +189,20 @@ def _get_cookies_playwright(
             page = context.new_page()
             page.goto(LOGIN_URL)
 
-            authorization, page = _wait_for_oidc_authorization(context)
-            if not authorization:
+            # The callback is the reliable post-SSO signal and avoids reading page state during redirects.
+            try:
+                page.wait_for_url("**/auth/callback**", timeout=LOGIN_TIMEOUT_MS)
+                page.wait_for_load_state("networkidle", timeout=15000)
+                print("Login detected.", file=sys.stderr)
+            except PWTimeout:
+                print(f"Login timed out after {LOGIN_TIMEOUT_SECS}s.", file=sys.stderr)
+                try:
+                    browser.close()
+                except Exception:
+                    pass
+                return []
+            except Exception:
+                print("Browser closed before login completed.", file=sys.stderr)
                 try:
                     browser.close()
                 except Exception:
@@ -291,13 +241,26 @@ def _get_cookies_playwright(
                 except Exception as _e:
                     print(f"Could not save browser session: {_e}", file=sys.stderr)
 
-            authorization = captured_auth.get("authorization", authorization)
-            if auth_file:
+            authorization = captured_auth.get("authorization")
+            if not authorization:
                 try:
-                    atomic_write(auth_file, authorization.encode("utf-8"))
-                    print(f"Saved auth token to {auth_file}", file=sys.stderr)
-                except Exception as _e:
-                    print(f"Could not save auth token: {_e}", file=sys.stderr)
+                    authorization = _authorization_from_storage_state(
+                        context.storage_state()
+                    )
+                except Exception as e:
+                    print(
+                        f"Warning: Could not read authorization from browser state: {e}",
+                        file=sys.stderr,
+                    )
+            if auth_file:
+                if authorization:
+                    try:
+                        atomic_write(auth_file, authorization.encode("utf-8"))
+                        print(f"Saved auth token to {auth_file}", file=sys.stderr)
+                    except Exception as _e:
+                        print(f"Could not save auth token: {_e}", file=sys.stderr)
+                else:
+                    print("No Bearer token found after login.", file=sys.stderr)
 
             try:
                 browser.close()

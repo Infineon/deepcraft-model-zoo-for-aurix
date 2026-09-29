@@ -121,7 +121,7 @@ Defines downloadable tools. See [CSV_FORMAT.md](CSV_FORMAT.md) for complete docu
 
 ### Environment Variables
 
-- `LOGIN_TIMEOUT` (seconds): Timeout for completing Infineon login and receiving an access token. Default: 180s
+- `LOGIN_TIMEOUT` (seconds): Timeout for waiting for the Infineon login callback. Default: 180s
 - `DOWNLOAD_TIMEOUT` (seconds): Timeout for file downloads. Default: 600s (10 min)
 
 ## Authentication Methods
@@ -195,9 +195,6 @@ only to the softwaretools and softwaretools-preview hosts, never to Artifactory.
 - The Infineon SSO took longer than expected
 - Increase timeout: `LOGIN_TIMEOUT=300 ./_CentralScripts/tool_loader/tool_loader.sh --auto-cookies`
 - Check your internet connection
-- A temporary `oidc.<state>` browser entry is not a completed login. The loader
-  waits for an `oidc.user:*` entry containing a Bearer access token and reports
-  the final page if no token is received.
 
 ### "Download timed out"
 - The file is large or connection is slow
