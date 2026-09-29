@@ -2,7 +2,7 @@
   "title": "CNN for Weather Classification",
   "description": "Weather classification model designed for embedded hardware",
   "long_description": "This CNN has been optimized for weather classification (presence of rain drops). The model is quantized using post-training quantization for efficient inference.",
-  "algorithm": "Classification",
+  "algorithm": "Image Classification",
   "sensors": ["Camera"],
   "domain": ["Vision"],
   "application": ["Automotive", "ADAS"],

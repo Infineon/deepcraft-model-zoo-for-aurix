@@ -2,7 +2,7 @@
   "title": "Vehicle Tracker",
   "description": "Online multi-target vehicle tracking model for embedded hardware",
   "long_description": "RNN-based online multi-target vehicle tracker implementing Milan et al. 2017 with domain adaptations for CARLA synthetic data. Stage 1: RNN motion model (64 hidden units, 61.5 KB). Stage 2: LSTM data association model (aurix mode, 86.0 KB). Trained on CARLA simulator data (5 vehicle classes, 8 towns, 86,014 annotations). Designed for deployment on AURIX TC4Dx embedded MCU.",
-  "algorithm": "Tracking",
+  "algorithm": "Regression",
   "sensors": ["Camera"],
   "domain": ["Vision"],
   "application": ["Automotive", "ADAS"],

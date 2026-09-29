@@ -2,7 +2,7 @@
   "title": "MobileNet for Weather Classification",
   "description": "Weather classification model designed for embedded hardware",
   "long_description": "MobileNet is a lightweight deep learning model designed for efficient on-device vision applications. It has been optimized for speed and low power consumption, making it suitable for embedded hardware. The model has been pretrained and adapted for weather classification (presence of rain drops).",
-  "algorithm": "Classification",
+  "algorithm": "Image Classification",
   "sensors": ["Camera"],
   "domain": ["Vision"],
   "application": ["Automotive", "ADAS"],
